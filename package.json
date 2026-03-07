@@ -1,0 +1,19 @@
+{
+  "name": "tali-monorepo",
+  "private": true,
+  "packageManager": "pnpm@10.17.1",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "start": "turbo start --filter=@tali/web",
+    "dev:web": "turbo dev --filter=@tali/web",
+    "dev:api": "turbo dev --filter=@tali/api",
+    "build:web": "turbo build --filter=@tali/web",
+    "build:api": "turbo build --filter=@tali/api",
+    "start:web": "turbo start --filter=@tali/web",
+    "start:api": "turbo start --filter=@tali/api"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.8"
+  }
+}
