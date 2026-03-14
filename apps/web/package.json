@@ -11,10 +11,11 @@
   "dependencies": {
     "@tali/gemini": "workspace:*",
     "@tali/types": "workspace:*",
-    "@google/genai": "^1.34.0",
+    "better-auth": "^1.5.4",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
     "next": "^16.0.0",
+    "nextjs-toploader": "^3.9.17",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "recharts": "^3.6.0"

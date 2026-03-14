@@ -1,0 +1,481 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum UserRole {
+  TEACHER
+  ADMIN
+}
+
+enum LanguageCode {
+  ENGLISH
+  MARATHI
+  BILINGUAL
+}
+
+enum UploadProcessingStatus {
+  UPLOADED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum AnswerSheetProcessingStatus {
+  DETECTED
+  OCR_PENDING
+  PROCESSING
+  ANALYZED
+  REVIEWED
+  FAILED
+}
+
+enum AnalysisStatus {
+  DRAFT
+  REVIEWED
+  FINALIZED
+}
+
+enum ProcessingJobType {
+  DOCUMENT_SPLIT
+  OCR_EXTRACTION
+  ANSWER_ANALYSIS
+  LEARNING_PLAN
+  PDF_GENERATION
+  INSIGHT_GENERATION
+}
+
+enum ProcessingJobStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum PdfType {
+  ANALYSIS_REPORT
+  LEARNING_IMPROVEMENT_PLAN
+  BATCH_ANALYSIS_REPORT
+}
+
+enum ReferenceEntityType {
+  EXAM
+  EXAM_PAPER_UPLOAD
+  STUDENT_ANSWER_SHEET
+  ANSWER_ANALYSIS
+  LEARNING_IMPROVEMENT_PLAN
+  GENERATED_PDF
+  AI_INSIGHT
+}
+
+model School {
+  id              String         @id @default(cuid())
+  name            String
+  code            String?        @unique
+  board           String?
+  address         String?
+  timezone        String?        @default("Asia/Kolkata")
+  defaultLanguage LanguageCode   @default(MARATHI)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  users           User[]
+  classes         Class[]
+  subjects        Subject[]
+  students        Student[]
+
+  @@index([name])
+  @@map("schools")
+}
+
+model User {
+  id                String          @id @default(cuid())
+  name              String
+  email             String          @unique
+  emailVerified     Boolean         @default(false)
+  image             String?
+  role              UserRole        @default(TEACHER)
+  schoolId          String?
+  preferredLanguage LanguageCode    @default(ENGLISH)
+  banned            Boolean         @default(false)
+  banReason         String?
+  banExpires        DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  school            School?         @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+  accounts          Account[]
+  sessions          Session[]
+  exams             Exam[]          @relation("ExamTeacher")
+  uploads           ExamPaperUpload[] @relation("UploadTeacher")
+  teacherEdits      TeacherEdit[]   @relation("TeacherEditAuthor")
+  generatedPdfs     GeneratedPDF[]  @relation("GeneratedPdfTeacher")
+
+  @@index([schoolId, role])
+  @@index([createdAt])
+  @@map("users")
+}
+
+model Account {
+  id                      String    @id @default(cuid())
+  userId                  String
+  accountId               String
+  providerId              String
+  accessToken             String?
+  refreshToken            String?
+  accessTokenExpiresAt    DateTime?
+  refreshTokenExpiresAt   DateTime?
+  scope                   String?
+  idToken                 String?
+  password                String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id                   String    @id @default(cuid())
+  userId               String
+  token                String    @unique
+  expiresAt            DateTime
+  ipAddress            String?
+  userAgent            String?
+  activeOrganizationId String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@unique([identifier, value])
+  @@index([expiresAt])
+  @@map("verifications")
+}
+
+model Class {
+  id           String       @id @default(cuid())
+  schoolId     String
+  name         String
+  division     String?
+  gradeLevel   Int?
+  academicYear String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  school       School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  students     Student[]
+  exams        Exam[]
+  classSubjects ClassSubject[]
+  aiInsights   AIInsight[]
+
+  @@unique([schoolId, name, division, academicYear])
+  @@index([schoolId, academicYear])
+  @@map("classes")
+}
+
+model Subject {
+  id              String        @id @default(cuid())
+  schoolId        String
+  name            String
+  code            String?
+  defaultLanguage LanguageCode  @default(BILINGUAL)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  school          School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  exams           Exam[]
+  classSubjects   ClassSubject[]
+  aiInsights      AIInsight[]
+
+  @@unique([schoolId, name])
+  @@index([schoolId])
+  @@map("subjects")
+}
+
+model ClassSubject {
+  id        String   @id @default(cuid())
+  classId   String
+  subjectId String
+  createdAt DateTime @default(now())
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([classId, subjectId])
+  @@index([subjectId])
+  @@map("class_subjects")
+}
+
+model Student {
+  id                String            @id @default(cuid())
+  schoolId          String
+  classId           String
+  name              String
+  rollNumber        String
+  preferredLanguage LanguageCode      @default(BILINGUAL)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  school            School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  class             Class             @relation(fields: [classId], references: [id], onDelete: Cascade)
+  answerSheets      StudentAnswerSheet[]
+
+  @@unique([classId, rollNumber])
+  @@index([schoolId, classId])
+  @@index([name])
+  @@map("students")
+}
+
+model Exam {
+  id             String            @id @default(cuid())
+  title          String
+  subjectId      String
+  classId        String
+  teacherId      String
+  examDate       DateTime
+  totalMarks     Decimal?
+  outputLanguage LanguageCode      @default(BILINGUAL)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  subject        Subject           @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  class          Class             @relation(fields: [classId], references: [id], onDelete: Restrict)
+  teacher        User              @relation("ExamTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+  uploads        ExamPaperUpload[]
+  aiInsights     AIInsight[]
+  aiJobs         AIProcessingJob[]
+
+  @@index([teacherId, examDate])
+  @@index([classId, examDate])
+  @@index([subjectId, examDate])
+  @@map("exams")
+}
+
+model ExamPaperUpload {
+  id                 String                 @id @default(cuid())
+  teacherId          String
+  examId             String
+  fileUrl            String
+  originalFileName   String?
+  mimeType           String?
+  fileSizeBytes      Int?
+  checksum           String?
+  uploadedAt         DateTime               @default(now())
+  processingStatus   UploadProcessingStatus @default(UPLOADED)
+  detectedStudentCount Int                  @default(0)
+  outputLanguage     LanguageCode           @default(BILINGUAL)
+  errorMessage       String?
+  teacher            User                   @relation("UploadTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+  exam               Exam                   @relation(fields: [examId], references: [id], onDelete: Cascade)
+  answerSheets       StudentAnswerSheet[]
+  aiJobs             AIProcessingJob[]
+
+  @@index([teacherId, uploadedAt])
+  @@index([examId, processingStatus])
+  @@index([processingStatus, uploadedAt])
+  @@map("exam_paper_uploads")
+}
+
+model StudentAnswerSheet {
+  id                    String                     @id @default(cuid())
+  uploadId              String
+  studentId             String?
+  detectedStudentName   String?
+  detectedRollNumber    String?
+  pageRangeStart        Int
+  pageRangeEnd          Int
+  extractedText         String?
+  extractedMetadata     Json?
+  documentLanguage      LanguageCode              @default(BILINGUAL)
+  processingStatus      AnswerSheetProcessingStatus @default(DETECTED)
+  ocrConfidence         Float?
+  studentMatchConfidence Float?
+  matchedByTeacher      Boolean                    @default(false)
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+  upload                ExamPaperUpload            @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  student               Student?                   @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  analyses              AnswerAnalysis[]
+  aiJobs                AIProcessingJob[]
+
+  @@unique([uploadId, pageRangeStart, pageRangeEnd])
+  @@index([uploadId, processingStatus])
+  @@index([studentId])
+  @@index([detectedStudentName])
+  @@map("student_answer_sheets")
+}
+
+model AnswerAnalysis {
+  id                  String          @id @default(cuid())
+  studentAnswerSheetId String
+  version             Int             @default(1)
+  analysisStatus      AnalysisStatus  @default(DRAFT)
+  studentScore        Decimal
+  /// Localized JSON object or array, for example: {"en": ["Good algebra"], "mr": ["बीजगणित चांगले"]}
+  strengths           Json
+  /// Localized JSON object or array
+  weakTopics          Json
+  /// Localized JSON object or array
+  conceptualMistakes  Json
+  /// Localized teacher-facing remarks
+  teacherRemarks      Json?
+  /// Per-question structured analysis returned by Gemini
+  answerBreakdown     Json?
+  aiGenerated         Boolean         @default(true)
+  outputLanguage      LanguageCode    @default(BILINGUAL)
+  aiModel             String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  reviewedAt          DateTime?
+  studentAnswerSheet  StudentAnswerSheet @relation(fields: [studentAnswerSheetId], references: [id], onDelete: Cascade)
+  learningImprovementPlan LearningImprovementPlan?
+  teacherEdits        TeacherEdit[]
+  generatedPdfs       GeneratedPDF[]
+  aiJobs              AIProcessingJob[]
+
+  @@unique([studentAnswerSheetId, version])
+  @@index([studentAnswerSheetId, analysisStatus])
+  @@index([createdAt])
+  @@map("answer_analyses")
+}
+
+model LearningImprovementPlan {
+  id                             String        @id @default(cuid())
+  analysisId                     String        @unique
+  /// Localized JSON array of activities
+  activities                     Json
+  /// Localized JSON array of enrichment activities
+  advancedActivitiesForTopStudents Json?
+  /// Localized JSON object describing the recommended schedule
+  recommendedStudySchedule       Json
+  aiGenerated                    Boolean       @default(true)
+  outputLanguage                 LanguageCode  @default(BILINGUAL)
+  createdAt                      DateTime      @default(now())
+  updatedAt                      DateTime      @updatedAt
+  analysis                       AnswerAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  teacherEdits                   TeacherEdit[]
+  generatedPdfs                  GeneratedPDF[]
+  aiJobs                         AIProcessingJob[]
+
+  @@index([createdAt])
+  @@map("learning_improvement_plans")
+}
+
+model TeacherEdit {
+  id                         String                     @id @default(cuid())
+  analysisId                 String?
+  learningImprovementPlanId  String?
+  fieldEdited                String
+  originalText               Json
+  editedText                 Json
+  editedByTeacherId          String
+  editedAt                   DateTime                   @default(now())
+  analysis                   AnswerAnalysis?            @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  learningImprovementPlan    LearningImprovementPlan?   @relation(fields: [learningImprovementPlanId], references: [id], onDelete: Cascade)
+  editedByTeacher            User                       @relation("TeacherEditAuthor", fields: [editedByTeacherId], references: [id], onDelete: Restrict)
+
+  @@index([analysisId])
+  @@index([learningImprovementPlanId])
+  @@index([editedByTeacherId, editedAt])
+  @@map("teacher_edits")
+}
+
+model AIProcessingJob {
+  id                        String               @id @default(cuid())
+  jobType                   ProcessingJobType
+  inputReferenceId          String
+  inputReferenceType        ReferenceEntityType
+  outputReferenceId         String?
+  outputReferenceType       ReferenceEntityType?
+  status                    ProcessingJobStatus  @default(QUEUED)
+  provider                  String               @default("gemini")
+  modelName                 String?
+  tokensUsed                Int                  @default(0)
+  inputTokens               Int                  @default(0)
+  outputTokens              Int                  @default(0)
+  processingTimeMs          Int?
+  requestPayload            Json?
+  responsePayload           Json?
+  errorMessage              String?
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
+  startedAt                 DateTime?
+  completedAt               DateTime?
+  examId                    String?
+  uploadId                  String?
+  studentAnswerSheetId      String?
+  analysisId                String?
+  learningImprovementPlanId String?
+  exam                      Exam?                @relation(fields: [examId], references: [id], onDelete: SetNull)
+  upload                    ExamPaperUpload?     @relation(fields: [uploadId], references: [id], onDelete: SetNull)
+  studentAnswerSheet        StudentAnswerSheet?  @relation(fields: [studentAnswerSheetId], references: [id], onDelete: SetNull)
+  analysis                  AnswerAnalysis?      @relation(fields: [analysisId], references: [id], onDelete: SetNull)
+  learningImprovementPlan   LearningImprovementPlan? @relation(fields: [learningImprovementPlanId], references: [id], onDelete: SetNull)
+
+  @@index([jobType, status, createdAt])
+  @@index([inputReferenceType, inputReferenceId])
+  @@index([examId])
+  @@index([uploadId])
+  @@index([studentAnswerSheetId])
+  @@index([analysisId])
+  @@index([learningImprovementPlanId])
+  @@map("ai_processing_jobs")
+}
+
+model GeneratedPDF {
+  id                        String                    @id @default(cuid())
+  analysisId                String?
+  learningImprovementPlanId String?
+  teacherId                 String
+  pdfType                   PdfType
+  fileUrl                   String
+  fileSizeBytes             Int?
+  checksum                  String?
+  language                  LanguageCode              @default(BILINGUAL)
+  generatedAt               DateTime                  @default(now())
+  analysis                  AnswerAnalysis?           @relation(fields: [analysisId], references: [id], onDelete: SetNull)
+  learningImprovementPlan   LearningImprovementPlan?  @relation(fields: [learningImprovementPlanId], references: [id], onDelete: SetNull)
+  teacher                   User                      @relation("GeneratedPdfTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+
+  @@index([teacherId, generatedAt])
+  @@index([analysisId, pdfType])
+  @@index([learningImprovementPlanId, pdfType])
+  @@map("generated_pdfs")
+}
+
+model AIInsight {
+  id                      String        @id @default(cuid())
+  examId                  String
+  classId                 String?
+  subjectId               String?
+  topicName               String
+  averageScore            Decimal
+  /// Localized JSON payload describing which students are struggling and why
+  studentsStruggling      Json
+  studentsStrugglingCount Int           @default(0)
+  generatedSummary        Json?
+  language                LanguageCode  @default(BILINGUAL)
+  generatedAt             DateTime      @default(now())
+  exam                    Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
+  class                   Class?        @relation(fields: [classId], references: [id], onDelete: SetNull)
+  subject                 Subject?      @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+
+  @@index([examId, topicName])
+  @@index([classId, subjectId])
+  @@index([generatedAt])
+  @@map("ai_insights")
+}

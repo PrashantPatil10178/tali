@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "nextjs-toploader/app";
 import React, { useEffect, useState } from "react";
 import AttendanceTracker from "@/components/AttendanceTracker";
 import ChatInterface from "@/components/ChatInterface";
@@ -11,6 +12,7 @@ import ResultView from "@/components/ResultView";
 import Scanner from "@/components/Scanner";
 import StudentProfile from "@/components/StudentProfile";
 import StudentsList from "@/components/StudentsList";
+import { signOut, useSession } from "@/lib/auth-client";
 import {
   AppSection,
   AttendanceRecord,
@@ -82,6 +84,8 @@ const MOCK_HISTORY: GradingResult[] = [
 ];
 
 export default function Page() {
+  const router = useRouter();
+  const { data: session, isPending: isSessionPending } = useSession();
   const [activeSection, setActiveSection] = useState<AppSection>(
     AppSection.DASHBOARD,
   );
@@ -98,6 +102,13 @@ export default function Page() {
     Record<string, AttendanceRecord[]>
   >({});
   const [knowledgeSources] = useState<TextbookSource[]>(INITIAL_KNOWLEDGE);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  useEffect(() => {
+    if (!isSessionPending && !session) {
+      router.replace("/sign-in");
+    }
+  }, [isSessionPending, router, session]);
 
   const handleGraded = (result: GradingResult) => {
     setHistory((prev) => {
@@ -220,6 +231,18 @@ export default function Page() {
     }
   }, [history, selectedStudent, studentAttendance, studentNotes]);
 
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+
+    const { error } = await signOut();
+
+    setIsSigningOut(false);
+
+    if (!error) {
+      router.replace("/sign-in");
+    }
+  };
+
   const renderContent = () => {
     if (currentResults) {
       return (
@@ -288,14 +311,26 @@ export default function Page() {
     }
   };
 
+  if (isSessionPending || !session) {
+    return (
+      <div className="auth-loading-screen">
+        Loading your classroom workspace...
+      </div>
+    );
+  }
+
   return (
     <Layout
       activeSection={activeSection}
+      currentUserName={session.user.name || session.user.email || "Teacher"}
+      currentUserRole={session.user.email || "Authenticated educator"}
+      isSigningOut={isSigningOut}
       onNavigate={(section) => {
         setActiveSection(section);
         setCurrentResults(null);
         setSelectedStudent(null);
       }}
+      onSignOut={handleSignOut}
     >
       {renderContent()}
     </Layout>

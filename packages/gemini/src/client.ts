@@ -6,12 +6,19 @@ type GeminiAction =
   | "complexEducationalQuery"
   | "searchGroundingQuery";
 
+const getApiBaseUrl = () =>
+  (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001").replace(
+    /\/$/,
+    "",
+  );
+
 async function callGeminiApi<T>(
   action: GeminiAction,
   payload: Record<string, unknown>,
 ): Promise<T> {
-  const response = await fetch("/api/gemini", {
+  const response = await fetch(`${getApiBaseUrl()}/api/gemini`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },

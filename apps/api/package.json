@@ -5,13 +5,22 @@
   "type": "module",
   "scripts": {
     "dev": "bun --watch src/index.ts",
-    "build": "bun build ./src/index.ts --outdir ./dist --target bun",
-    "start": "bun ./dist/index.js"
+    "build": "prisma generate && bun build ./src/index.ts --outdir ./dist --target bun --packages external",
+    "start": "bun ./dist/index.js",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev"
   },
   "dependencies": {
-    "elysia": "^1.3.8"
+    "@elysiajs/cors": "^1.4.1",
+    "@tali/database": "workspace:*",
+    "@tali/types": "workspace:*",
+    "better-auth": "^1.5.4",
+    "dotenv": "^17.3.1",
+    "elysia": "^1.3.8",
+    "prisma": "^7.4.2"
   },
   "devDependencies": {
+    "@types/node": "^22.14.0",
     "bun-types": "^1.2.23"
   }
 }

@@ -1,20 +1,171 @@
-import { GoogleGenAI, Type } from "@google/genai";
 import { GradingResult, LearningPlan } from "@tali/types";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const GEMINI_API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 
-const createClient = () => {
-  const apiKey =
-    process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+const SchemaType = {
+  ARRAY: "ARRAY",
+  OBJECT: "OBJECT",
+  STRING: "STRING",
+  NUMBER: "NUMBER",
+  INTEGER: "INTEGER",
+} as const;
+
+type GeminiPart =
+  | { text: string }
+  | {
+      inlineData: {
+        data: string;
+        mimeType: string;
+      };
+    };
+
+type GeminiContent = {
+  role?: "user" | "model";
+  parts: GeminiPart[];
+};
+
+type GeminiSchema = {
+  type: (typeof SchemaType)[keyof typeof SchemaType];
+  properties?: Record<string, GeminiSchema>;
+  items?: GeminiSchema;
+  required?: string[];
+};
+
+type GenerateContentOptions = {
+  model: string;
+  contents: string | GeminiContent | GeminiContent[];
+  config?: {
+    systemInstruction?: string;
+    temperature?: number;
+    maxOutputTokens?: number;
+    responseMimeType?: string;
+    responseSchema?: GeminiSchema;
+    thinkingConfig?: {
+      thinkingBudget: number;
+    };
+    tools?: Array<Record<string, unknown>>;
+  };
+};
+
+type GenerateContentResponse = {
+  candidates?: Array<{
+    content?: {
+      parts?: Array<{
+        text?: string;
+      }>;
+    };
+    groundingMetadata?: {
+      groundingChunks?: unknown[];
+    };
+  }>;
+  promptFeedback?: {
+    blockReason?: string;
+  };
+  error?: {
+    message?: string;
+  };
+};
+
+const getApiKey = () => {
+  const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
     throw new Error(
-      "Missing Gemini API key. Set GEMINI_API_KEY in your environment.",
+      "Missing Gemini API key. Set GEMINI_API_KEY in apps/api/.env.",
     );
   }
 
-  return new GoogleGenAI({ apiKey });
+  return apiKey;
 };
+
+const normalizeContents = (
+  contents: GenerateContentOptions["contents"],
+): GeminiContent[] => {
+  if (typeof contents === "string") {
+    return [{ role: "user", parts: [{ text: contents }] }];
+  }
+
+  return Array.isArray(contents) ? contents : [{ role: "user", ...contents }];
+};
+
+const cleanJsonText = (text: string) => {
+  const trimmed = text.trim();
+
+  if (!trimmed.startsWith("```")) {
+    return trimmed;
+  }
+
+  return trimmed
+    .replace(/^```json\n?/, "")
+    .replace(/\n?```$/, "")
+    .trim();
+};
+
+const extractResponseText = (response: GenerateContentResponse) => {
+  return (
+    response.candidates?.[0]?.content?.parts
+      ?.map((part) => part.text)
+      .filter((text): text is string => Boolean(text))
+      .join("") ?? ""
+  );
+};
+
+async function generateContent({
+  model,
+  contents,
+  config,
+}: GenerateContentOptions): Promise<GenerateContentResponse> {
+  const apiKey = getApiKey();
+  const response = await fetch(
+    `${GEMINI_API_BASE_URL}/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: normalizeContents(contents),
+        systemInstruction: config?.systemInstruction
+          ? {
+              parts: [{ text: config.systemInstruction }],
+            }
+          : undefined,
+        generationConfig: {
+          temperature: config?.temperature,
+          maxOutputTokens: config?.maxOutputTokens,
+          responseMimeType: config?.responseMimeType,
+          responseSchema: config?.responseSchema,
+          thinkingConfig: config?.thinkingConfig,
+        },
+        tools: config?.tools,
+      }),
+    },
+  );
+
+  const json = (await response
+    .json()
+    .catch(() => null)) as GenerateContentResponse | null;
+
+  if (!response.ok) {
+    throw new Error(
+      json?.error?.message ||
+        `Gemini request failed with status ${response.status}.`,
+    );
+  }
+
+  if (json?.promptFeedback?.blockReason) {
+    throw new Error(
+      `Gemini blocked the request: ${json.promptFeedback.blockReason}.`,
+    );
+  }
+
+  if (!json) {
+    throw new Error("Gemini returned an empty response.");
+  }
+
+  return json;
+}
 
 async function callWithRetry<T>(
   fn: () => Promise<T>,
@@ -22,15 +173,18 @@ async function callWithRetry<T>(
 ): Promise<T> {
   let lastError: unknown;
 
-  for (let i = 0; i < maxRetries; i++) {
+  for (let attempt = 0; attempt < maxRetries; attempt += 1) {
     try {
       return await fn();
     } catch (error) {
       lastError = error;
-      const errorStr = JSON.stringify(error);
+      const errorString = JSON.stringify(error);
 
-      if (errorStr.includes("429") || errorStr.includes("RESOURCE_EXHAUSTED")) {
-        const waitTime = Math.pow(2, i + 1) * 2000 + Math.random() * 1000;
+      if (
+        errorString.includes("429") ||
+        errorString.includes("RESOURCE_EXHAUSTED")
+      ) {
+        const waitTime = Math.pow(2, attempt + 1) * 2000 + Math.random() * 1000;
         await delay(waitTime);
         continue;
       }
@@ -45,7 +199,6 @@ async function callWithRetry<T>(
 export async function analyzeAnswerSheet(
   dataUrl: string,
 ): Promise<GradingResult[]> {
-  const ai = createClient();
   const [header, base64Data] = dataUrl.split(",");
   const mimeType = header.match(/:(.*?);/)?.[1] || "image/jpeg";
 
@@ -63,7 +216,7 @@ CRITICAL: Never summarize multiple questions into one. Every question gets its o
 Output ONLY valid JSON.`;
 
   return callWithRetry(async () => {
-    const response = await ai.models.generateContent({
+    const response = await generateContent({
       model: "gemini-3-flash-preview",
       contents: {
         parts: [
@@ -79,27 +232,27 @@ Output ONLY valid JSON.`;
         maxOutputTokens: 65000,
         responseMimeType: "application/json",
         responseSchema: {
-          type: Type.ARRAY,
+          type: SchemaType.ARRAY,
           items: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-              studentName: { type: Type.STRING },
-              subject: { type: Type.STRING },
-              score: { type: Type.NUMBER },
-              totalMarks: { type: Type.NUMBER },
-              feedback: { type: Type.STRING },
+              studentName: { type: SchemaType.STRING },
+              subject: { type: SchemaType.STRING },
+              score: { type: SchemaType.NUMBER },
+              totalMarks: { type: SchemaType.NUMBER },
+              feedback: { type: SchemaType.STRING },
               corrections: {
-                type: Type.ARRAY,
+                type: SchemaType.ARRAY,
                 items: {
-                  type: Type.OBJECT,
+                  type: SchemaType.OBJECT,
                   properties: {
-                    questionNo: { type: Type.STRING },
-                    questionText: { type: Type.STRING },
-                    studentAnswer: { type: Type.STRING },
-                    correctAnswer: { type: Type.STRING },
-                    marksObtained: { type: Type.NUMBER },
-                    maxMarks: { type: Type.NUMBER },
-                    analysis: { type: Type.STRING },
+                    questionNo: { type: SchemaType.STRING },
+                    questionText: { type: SchemaType.STRING },
+                    studentAnswer: { type: SchemaType.STRING },
+                    correctAnswer: { type: SchemaType.STRING },
+                    marksObtained: { type: SchemaType.NUMBER },
+                    maxMarks: { type: SchemaType.NUMBER },
+                    analysis: { type: SchemaType.STRING },
                   },
                   required: [
                     "questionNo",
@@ -112,7 +265,10 @@ Output ONLY valid JSON.`;
                   ],
                 },
               },
-              weakAreas: { type: Type.ARRAY, items: { type: Type.STRING } },
+              weakAreas: {
+                type: SchemaType.ARRAY,
+                items: { type: SchemaType.STRING },
+              },
             },
             required: [
               "studentName",
@@ -128,14 +284,7 @@ Output ONLY valid JSON.`;
       },
     });
 
-    let cleanedText = response.text.trim();
-    if (cleanedText.startsWith("```")) {
-      cleanedText = cleanedText
-        .replace(/^```json\n?/, "")
-        .replace(/\n?```$/, "");
-    }
-
-    const results = JSON.parse(cleanedText);
+    const results = JSON.parse(cleanJsonText(extractResponseText(response)));
     return results.map((result: GradingResult) => ({
       ...result,
       date: new Date().toISOString(),
@@ -148,8 +297,6 @@ export async function generateLearningPlan(
   days: number,
   dailyMinutes: number,
 ): Promise<LearningPlan> {
-  const ai = createClient();
-
   const systemInstruction = `Identity: Guruji AI (Creative Education Visionary).
 Goal: Create a HYPER-CREATIVE Learning Improvement Plan (LIP) for ${result.studentName} in Marathi.
 
@@ -174,7 +321,7 @@ Output ONLY valid JSON.`;
 कृपया एक रंजक आणि कल्पक कृती-आराखडा तयार करा जो मुलाला अभ्यासासारखा वाटणार नाही.`;
 
   return callWithRetry(async () => {
-    const response = await ai.models.generateContent({
+    const response = await generateContent({
       model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
@@ -182,21 +329,24 @@ Output ONLY valid JSON.`;
         temperature: 0.8,
         responseMimeType: "application/json",
         responseSchema: {
-          type: Type.OBJECT,
+          type: SchemaType.OBJECT,
           properties: {
-            weakAreas: { type: Type.ARRAY, items: { type: Type.STRING } },
-            timeline: { type: Type.STRING },
-            dailyTime: { type: Type.STRING },
+            weakAreas: {
+              type: SchemaType.ARRAY,
+              items: { type: SchemaType.STRING },
+            },
+            timeline: { type: SchemaType.STRING },
+            dailyTime: { type: SchemaType.STRING },
             activities: {
-              type: Type.ARRAY,
+              type: SchemaType.ARRAY,
               items: {
-                type: Type.OBJECT,
+                type: SchemaType.OBJECT,
                 properties: {
-                  day: { type: Type.INTEGER },
-                  title: { type: Type.STRING },
-                  whatIsNeeded: { type: Type.STRING },
-                  howToDo: { type: Type.STRING },
-                  guidelines: { type: Type.STRING },
+                  day: { type: SchemaType.INTEGER },
+                  title: { type: SchemaType.STRING },
+                  whatIsNeeded: { type: SchemaType.STRING },
+                  howToDo: { type: SchemaType.STRING },
+                  guidelines: { type: SchemaType.STRING },
                 },
                 required: [
                   "day",
@@ -213,7 +363,7 @@ Output ONLY valid JSON.`;
       },
     });
 
-    return JSON.parse(response.text.trim());
+    return JSON.parse(cleanJsonText(extractResponseText(response)));
   });
 }
 
@@ -221,10 +371,8 @@ export async function complexEducationalQuery(
   query: string,
   useThinking = true,
 ): Promise<string> {
-  const ai = createClient();
-
   return callWithRetry(async () => {
-    const response = await ai.models.generateContent({
+    const response = await generateContent({
       model: "gemini-3-pro-preview",
       contents: query,
       config: {
@@ -234,24 +382,24 @@ export async function complexEducationalQuery(
       },
     });
 
-    return response.text;
+    return extractResponseText(response);
   });
 }
 
 export async function searchGroundingQuery(
   query: string,
 ): Promise<{ text: string; sources: any[] }> {
-  const ai = createClient();
-
   return callWithRetry(async () => {
-    const response = await ai.models.generateContent({
+    const response = await generateContent({
       model: "gemini-3-flash-preview",
       contents: query,
-      config: { tools: [{ googleSearch: {} }] },
+      config: {
+        tools: [{ googleSearch: {} }],
+      },
     });
 
     return {
-      text: response.text,
+      text: extractResponseText(response),
       sources:
         response.candidates?.[0]?.groundingMetadata?.groundingChunks || [],
     };

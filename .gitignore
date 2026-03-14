@@ -15,6 +15,10 @@ dist-ssr
 out
 *.local
 .env*
+apps/api/src/generated/prisma
+apps/api/*.db
+apps/api/*.db-journal
+packages/database/generated
 
 # Editor directories and files
 .vscode/*

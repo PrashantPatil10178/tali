@@ -1,0 +1,14 @@
+{
+  "name": "@tali/database",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@prisma/adapter-better-sqlite3": "^7.4.2",
+    "@prisma/client": "^7.4.2",
+    "@prisma/client-runtime-utils": "^7.4.2"
+  },
+  "exports": {
+    "./client": "./src/client.ts"
+  }
+}
