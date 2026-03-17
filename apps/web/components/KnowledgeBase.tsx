@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { TextbookSource } from "@tali/types";
+import { useLanguage } from "@/lib/LanguageContext";
 
 const INITIAL_KNOWLEDGE: TextbookSource[] = [
   {
@@ -40,6 +41,7 @@ const INITIAL_KNOWLEDGE: TextbookSource[] = [
 ];
 
 const KnowledgeBase: React.FC = () => {
+  const { t } = useLanguage();
   const [sources, setSources] = useState<TextbookSource[]>(INITIAL_KNOWLEDGE);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -67,10 +69,10 @@ const KnowledgeBase: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">
-            ज्ञान भांडार (Knowledge Base)
+            {t("knowledge.title")}
           </h2>
           <p className="text-slate-500 text-sm">
-            माझ्याकडे असलेली पाठ्यपुस्तके आणि तुमचे साहित्य
+            {t("knowledge.subtitle")}
           </p>
         </div>
         <label
@@ -98,7 +100,7 @@ const KnowledgeBase: React.FC = () => {
               />
             )}
           </svg>
-          {isUploading ? "अपलोड होत आहे..." : "नवीन पीडीएफ जोडा"}
+          {isUploading ? t("knowledge.uploading") : t("knowledge.addPdf")}
           <input
             type="file"
             accept=".pdf"
@@ -137,15 +139,15 @@ const KnowledgeBase: React.FC = () => {
                 {source.name}
               </h3>
               <p className="text-xs text-slate-400 mb-2">
-                इयत्ता: {source.grade}
+                {t("knowledge.grade")}: {source.grade}
               </p>
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-slate-400">
-                  अपलोड: {source.uploadDate}
+                  {t("knowledge.uploaded")}: {source.uploadDate}
                 </span>
                 {source.isSystem && (
                   <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter bg-indigo-50 px-2 py-0.5 rounded">
-                    मूळ पुस्तक
+                    {t("knowledge.original")}
                   </span>
                 )}
               </div>
@@ -157,10 +159,8 @@ const KnowledgeBase: React.FC = () => {
       <div className="bg-amber-50 border border-amber-100 rounded-3xl p-6 text-amber-800 flex gap-4">
         <div className="text-2xl">💡</div>
         <div className="text-sm leading-relaxed">
-          <p className="font-bold mb-1">लक्षात ठेवा:</p>
-          तुम्ही जोडलेल्या नवीन पीडीएफचा वापर मी प्रश्नपत्रिका आणि गृहपाठ तयार
-          करण्यासाठी करू शकेन. कृपया स्पष्ट आणि वाचनीय पीडीएफ अपलोड करा जेणेकरून
-          मी त्यातील माहिती अचूकपणे समजू शकेन.
+          <p className="font-bold mb-1">{t("knowledge.tip")}</p>
+          {t("knowledge.tipText")}
         </div>
       </div>
     </div>

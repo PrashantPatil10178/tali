@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { StudentProfileData } from "@tali/types";
+import { useLanguage } from "@/lib/LanguageContext";
 
 interface AttendanceTrackerProps {
   students: StudentProfileData[];
@@ -10,6 +11,7 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
   students,
   onSave,
 }) => {
+  const { t } = useLanguage();
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [attendance, setAttendance] = useState<
     Record<string, "present" | "absent">
@@ -28,7 +30,7 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
       status,
     }));
     onSave(records);
-    alert("आजची हजेरी यशस्वीरित्या नोंदवली गेली आहे!");
+    alert(t("attendance.saved"));
   };
 
   const stats = {
@@ -42,9 +44,9 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
       <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">
-            दैनिक हजेरी (Attendance)
+            {t("attendance.title")}
           </h2>
-          <p className="text-slate-500 text-sm">आजची हजेरी नोंदवा</p>
+          <p className="text-slate-500 text-sm">{t("attendance.subtitle")}</p>
         </div>
         <div className="flex items-center gap-4">
           <input
@@ -57,7 +59,7 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
             onClick={handleSave}
             className="bg-indigo-600 text-white px-8 py-2 rounded-xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"
           >
-            हजेरी जतन करा
+            {t("attendance.save")}
           </button>
         </div>
       </div>
@@ -66,7 +68,7 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
         <div className="bg-green-50 p-6 rounded-3xl border border-green-100 flex items-center justify-between">
           <div>
             <p className="text-green-600 text-[10px] font-black uppercase tracking-widest">
-              हजर विद्यार्थी
+              {t("attendance.present")}
             </p>
             <p className="text-3xl font-black text-green-700">
               {stats.present}
@@ -77,7 +79,7 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
         <div className="bg-red-50 p-6 rounded-3xl border border-red-100 flex items-center justify-between">
           <div>
             <p className="text-red-600 text-[10px] font-black uppercase tracking-widest">
-              गैरहजर विद्यार्थी
+              {t("attendance.absent")}
             </p>
             <p className="text-3xl font-black text-red-700">{stats.absent}</p>
           </div>
@@ -86,7 +88,7 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
         <div className="bg-indigo-50 p-6 rounded-3xl border border-indigo-100 flex items-center justify-between">
           <div>
             <p className="text-indigo-600 text-[10px] font-black uppercase tracking-widest">
-              एकूण विद्यार्थी
+              {t("attendance.total")}
             </p>
             <p className="text-3xl font-black text-indigo-700">{stats.total}</p>
           </div>
@@ -99,9 +101,9 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
           <table className="w-full text-left">
             <thead className="bg-slate-50/80 text-slate-500 text-[10px] font-black uppercase tracking-widest">
               <tr>
-                <th className="px-8 py-4">विद्यार्थी</th>
-                <th className="px-8 py-4">वर्ग</th>
-                <th className="px-8 py-4 text-center">स्थिती (Status)</th>
+                <th className="px-8 py-4">{t("attendance.student")}</th>
+                <th className="px-8 py-4">{t("attendance.class")}</th>
+                <th className="px-8 py-4 text-center">{t("attendance.status")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -120,7 +122,7 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
                       </span>
                     </div>
                   </td>
-                  <td className="px-8 py-4 text-slate-500 text-sm">१० वी अ</td>
+                  <td className="px-8 py-4 text-slate-500 text-sm">{t("attendance.classLabel")}</td>
                   <td className="px-8 py-4">
                     <div className="flex justify-center">
                       <button
@@ -132,8 +134,8 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
                         }`}
                       >
                         {attendance[student.name] === "present"
-                          ? "हजर (Present)"
-                          : "गैरहजर (Absent)"}
+                          ? t("attendance.present")
+                          : t("attendance.absent")}
                       </button>
                     </div>
                   </td>

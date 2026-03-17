@@ -1,6 +1,7 @@
 import React, { useState, useRef, useMemo, useEffect } from "react";
 import { analyzeAnswerSheet } from "@tali/gemini/client";
 import { GradingResult } from "@tali/types";
+import { useLanguage } from "@/lib/LanguageContext";
 
 interface ScannerProps {
   onGraded: (result: GradingResult) => void;
@@ -20,6 +21,7 @@ interface FileItem {
 }
 
 const Scanner: React.FC<ScannerProps> = ({ onGraded, onViewResults }) => {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<FileItem[]>([]);
   const [timer, setTimer] = useState(0);
@@ -27,11 +29,11 @@ const Scanner: React.FC<ScannerProps> = ({ onGraded, onViewResults }) => {
   const timerIntervalRef = useRef<number | null>(null);
 
   const stages = [
-    "फाईल अपलोड होत आहे...",
-    "सर्व पाने तपासत आहे...",
-    "हस्ताक्षर आणि विद्यार्थी ओळखत आहे...",
-    "सूक्ष्म विश्लेषण सुरू आहे...",
-    "निकाल तयार होत आहेत...",
+    t("scanner.stage0"),
+    t("scanner.stage1"),
+    t("scanner.stage2"),
+    t("scanner.stage3"),
+    t("scanner.stage4"),
   ];
 
   useEffect(() => {
@@ -81,7 +83,7 @@ const Scanner: React.FC<ScannerProps> = ({ onGraded, onViewResults }) => {
           : "",
         status: "pending",
         progress: 0,
-        stage: "प्रतीक्षेत",
+        stage: t("scanner.stageWaiting"),
         mimeType: file.type,
       }));
       setSelectedFiles((prev) => [...prev, ...newItems]);
@@ -154,7 +156,7 @@ const Scanner: React.FC<ScannerProps> = ({ onGraded, onViewResults }) => {
                     ...f,
                     status: "done",
                     progress: 100,
-                    stage: "तपासणी पूर्ण!",
+                    stage: t("scanner.stageDone"),
                     results,
                   }
                 : f,
@@ -162,14 +164,14 @@ const Scanner: React.FC<ScannerProps> = ({ onGraded, onViewResults }) => {
           );
           results.forEach((r) => onGraded(r));
         } else {
-          throw new Error("निकाल सापडले नाहीत");
+          throw new Error(t("scanner.error.noResults"));
         }
       } catch (err: any) {
         clearInterval(progressInterval);
         const errorMsg =
           err.message?.includes("Quota") || JSON.stringify(err).includes("429")
-            ? "AI कोटा संपला आहे. थोड्या वेळाने प्रयत्न करा."
-            : "तपासणी अयशस्वी";
+            ? t("scanner.error.quota")
+            : t("scanner.error.generic");
 
         setSelectedFiles((prev) =>
           prev.map((f) =>
@@ -178,7 +180,7 @@ const Scanner: React.FC<ScannerProps> = ({ onGraded, onViewResults }) => {
                   ...f,
                   status: "error",
                   progress: 0,
-                  stage: "त्रुटी आली",
+                  stage: t("scanner.error.generic"),
                   errorMsg,
                 }
               : f,
@@ -195,10 +197,10 @@ const Scanner: React.FC<ScannerProps> = ({ onGraded, onViewResults }) => {
         <div className="p-8 border-b border-slate-50 bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-left">
             <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
-              बॅच तपासणी
+              {t("scanner.title")}
             </h2>
             <p className="text-slate-500 text-sm font-medium">
-              एकाच फाईलमध्ये अनेक विद्यार्थी असू शकतात
+              {t("scanner.subtitle")}
             </p>
           </div>
           <div className="flex gap-3">
@@ -207,14 +209,14 @@ const Scanner: React.FC<ScannerProps> = ({ onGraded, onViewResults }) => {
               disabled={loading}
               className="px-6 py-2.5 border-2 border-slate-200 text-slate-500 font-bold rounded-xl hover:bg-slate-50 transition-all text-sm disabled:opacity-50"
             >
-              सर्व हटवा
+              {t("scanner.clearAll")}
             </button>
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={loading}
               className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50"
             >
-              फाईल्स जोडा
+              {t("scanner.addFiles")}
             </button>
           </div>
           <input
@@ -248,7 +250,7 @@ const Scanner: React.FC<ScannerProps> = ({ onGraded, onViewResults }) => {
                 </div>
                 <div>
                   <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
-                    वेळ
+                    {t("scanner.time")}
                   </p>
                   <p className="text-2xl font-black text-indigo-900">
                     {formatTime(timer)}
@@ -263,7 +265,7 @@ const Scanner: React.FC<ScannerProps> = ({ onGraded, onViewResults }) => {
                 </div>
                 <div className="flex-1">
                   <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
-                    प्रगती
+                    {t("scanner.progress")}
                   </p>
                   <div className="w-full bg-slate-100 h-2 rounded-full mt-1 overflow-hidden">
                     <div
@@ -279,9 +281,9 @@ const Scanner: React.FC<ScannerProps> = ({ onGraded, onViewResults }) => {
                 </div>
                 <div>
                   <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
-                    यशस्वी
+                    {t("scanner.completed")}
                   </p>
-                  <p className="text-xl font-black text-slate-800">तपासल्या</p>
+                  <p className="text-xl font-black text-slate-800">{t("scanner.checked")}</p>
                 </div>
               </div>
             </div>
@@ -311,10 +313,10 @@ const Scanner: React.FC<ScannerProps> = ({ onGraded, onViewResults }) => {
               </div>
               <div className="text-center">
                 <p className="font-bold text-slate-700 text-lg">
-                  उत्तरपत्रिका अपलोड करण्यासाठी क्लिक करा
+                  {t("scanner.upload")}
                 </p>
                 <p className="text-sm text-slate-400">
-                  PDF, JPG, PNG फाईल्स निवडा
+                  {t("scanner.uploadSub")}
                 </p>
               </div>
             </div>
@@ -379,7 +381,7 @@ const Scanner: React.FC<ScannerProps> = ({ onGraded, onViewResults }) => {
                       <div className="mb-4">
                         <div className="flex justify-between items-start mb-1">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                            फाईल #{idx + 1}
+                            {t("scanner.file")} #{idx + 1}
                           </p>
                           {item.status === "done" && (
                             <span className="text-green-500">✅</span>
@@ -387,7 +389,7 @@ const Scanner: React.FC<ScannerProps> = ({ onGraded, onViewResults }) => {
                         </div>
                         <h4 className="font-black text-slate-800 truncate text-sm">
                           {item.results && item.results.length > 0
-                            ? `${item.results.length} विद्यार्थी सापडले`
+                            ? `${item.results.length} ${t("scanner.studentsFound")}`
                             : item.status === "processing"
                               ? item.stage
                               : item.file.name}
@@ -399,7 +401,7 @@ const Scanner: React.FC<ScannerProps> = ({ onGraded, onViewResults }) => {
                             onClick={() => onViewResults(item.results!)}
                             className="w-full bg-indigo-600 text-white font-black py-2 rounded-xl hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg text-sm"
                           >
-                            निकाल पहा
+                            {t("scanner.viewResults")}
                           </button>
                         )}
                         {(item.status === "pending" ||
@@ -409,7 +411,7 @@ const Scanner: React.FC<ScannerProps> = ({ onGraded, onViewResults }) => {
                               onClick={() => removeFile(item.id)}
                               className="w-full border-2 border-slate-100 text-red-500 font-bold py-2 rounded-xl hover:bg-red-50 transition-all text-xs"
                             >
-                              हटवा
+                              {t("scanner.remove")}
                             </button>
                           )}
                       </div>
@@ -430,12 +432,12 @@ const Scanner: React.FC<ScannerProps> = ({ onGraded, onViewResults }) => {
                   {loading ? (
                     <div className="flex items-center gap-3">
                       <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>तपासणी सुरू आहे...</span>
+                      <span>{t("scanner.scanning")}</span>
                     </div>
                   ) : (
                     <>
                       <span>
-                        सर्व तपासा (
+                        {t("scanner.scanAll")} (
                         {
                           selectedFiles.filter((f) => f.status !== "done")
                             .length

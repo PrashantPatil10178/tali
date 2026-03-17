@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { AppSection } from "@tali/types";
+import { useLanguage } from "@/lib/LanguageContext";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -284,7 +285,7 @@ const Layout: React.FC<LayoutProps> = ({
   const initials = getInitials(currentUserName);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [locale, setLocale] = useState<ShellLocale>("en");
+  const { locale, setLocale, t } = useLanguage();
   const [themeMode, setThemeMode] = useState<ThemeMode>("light");
 
   const activeMeta = SECTION_META[activeSection];
@@ -326,13 +327,15 @@ const Layout: React.FC<LayoutProps> = ({
       <aside
         className={`dashboard-sidebar fixed inset-y-0 left-0 z-40 flex h-full flex-col border-r border-slate-200/70 bg-white/96 backdrop-blur-xl transition-[width,transform] duration-300 ease-out dark:border-slate-800/80 dark:bg-slate-950/94 lg:static lg:translate-x-0 ${isSidebarCollapsed ? "lg:w-24" : "lg:w-72"} ${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"} w-72`}
       >
-        <div className="flex items-center justify-between gap-3 px-5 pb-5 pt-6">
+        <div
+          className={`flex px-5 pb-5 pt-6 ${isSidebarCollapsed ? "lg:flex-col lg:items-center lg:gap-3 lg:px-3" : "items-center justify-between gap-3"}`}
+        >
           <button
-            className="flex min-w-0 items-center gap-3 text-left"
+            className={`flex min-w-0 items-center gap-3 text-left ${isSidebarCollapsed ? "lg:justify-center" : ""}`}
             onClick={() => handleNavigate(AppSection.DASHBOARD)}
             type="button"
           >
-            <div className="dashboard-brand-mark">
+            <div className="dashboard-brand-mark flex-shrink-0">
               <svg
                 aria-hidden="true"
                 className="size-5"
@@ -346,12 +349,12 @@ const Layout: React.FC<LayoutProps> = ({
               </svg>
             </div>
             <div
-              className={`min-w-0 transition-opacity duration-200 ${isSidebarCollapsed ? "lg:opacity-0" : "opacity-100"}`}
+              className={`min-w-0 overflow-hidden transition-all duration-300 ${isSidebarCollapsed ? "lg:w-0 lg:opacity-0" : "opacity-100"}`}
             >
-              <p className="font-display text-2xl font-extrabold tracking-tight text-slate-950 dark:text-white">
+              <p className="whitespace-nowrap font-display text-2xl font-extrabold tracking-tight text-slate-950 dark:text-white">
                 TALI
               </p>
-              <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              <p className="whitespace-nowrap text-[11px] font-semibold text-slate-500 dark:text-slate-400">
                 AI Education Platform
               </p>
             </div>
@@ -389,7 +392,7 @@ const Layout: React.FC<LayoutProps> = ({
             return (
               <button
                 aria-current={isActive ? "page" : undefined}
-                className={`dashboard-nav-item ${isActive ? "dashboard-nav-item-active" : "dashboard-nav-item-idle"} ${isSidebarCollapsed ? "lg:justify-center" : ""}`}
+                className={`dashboard-nav-item group relative ${isActive ? "dashboard-nav-item-active" : "dashboard-nav-item-idle"} ${isSidebarCollapsed ? "lg:justify-center" : ""}`}
                 key={item.section}
                 onClick={() => handleNavigate(item.section)}
                 type="button"
@@ -406,6 +409,11 @@ const Layout: React.FC<LayoutProps> = ({
                     {item.label[locale]}
                   </span>
                 </span>
+                {isSidebarCollapsed && (
+                  <span className="sidebar-nav-tooltip">
+                    {item.label[locale]}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -413,28 +421,60 @@ const Layout: React.FC<LayoutProps> = ({
 
         <div className="border-t border-slate-200/70 px-4 pb-4 pt-4 dark:border-slate-800/80">
           <div
-            className={`dashboard-profile-card ${isSidebarCollapsed ? "lg:items-center lg:px-2" : ""}`}
+            className={`dashboard-profile-card ${isSidebarCollapsed ? "lg:py-3 lg:px-2" : ""}`}
           >
-            <div className="flex items-center gap-3">
-              <div className="dashboard-avatar-chip">{initials}</div>
-              <div className={`${isSidebarCollapsed ? "lg:hidden" : "block"}`}>
-                <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  {currentUserName || "Teacher"}
-                </p>
-                <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
-                  {currentUserRole || "Authenticated educator"}
-                </p>
+            <div
+              className={`flex items-center gap-3 ${isSidebarCollapsed ? "lg:justify-center" : ""}`}
+            >
+              <div className="group relative flex-shrink-0">
+                <div className="dashboard-avatar-chip">{initials}</div>
+                {isSidebarCollapsed && (
+                  <span className="sidebar-nav-tooltip">
+                    {currentUserName || "Teacher"}
+                  </span>
+                )}
               </div>
+              {!isSidebarCollapsed && (
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {currentUserName || "Teacher"}
+                  </p>
+                  <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+                    {currentUserRole || "Authenticated educator"}
+                  </p>
+                </div>
+              )}
+              {isSidebarCollapsed && (
+                <div className="min-w-0 lg:hidden">
+                  <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {currentUserName || "Teacher"}
+                  </p>
+                  <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+                    {currentUserRole || "Authenticated educator"}
+                  </p>
+                </div>
+              )}
             </div>
-            {onSignOut ? (
+            {onSignOut && !isSidebarCollapsed && (
               <button
-                className={`dashboard-secondary-button mt-4 ${isSidebarCollapsed ? "lg:hidden" : ""}`}
+                className="dashboard-secondary-button mt-4"
                 onClick={onSignOut}
                 type="button"
               >
                 {isSigningOut ? "Signing out..." : "Sign Out"}
               </button>
-            ) : null}
+            )}
+            {onSignOut && isSidebarCollapsed && (
+              <div className="mt-4 lg:hidden">
+                <button
+                  className="dashboard-secondary-button w-full"
+                  onClick={onSignOut}
+                  type="button"
+                >
+                  {isSigningOut ? "Signing out..." : "Sign Out"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </aside>
@@ -538,7 +578,7 @@ const Layout: React.FC<LayoutProps> = ({
                 onClick={() => setThemeMode("light")}
                 type="button"
               >
-                Light
+                {t("topbar.theme.light")}
               </button>
               <button
                 className={
@@ -549,7 +589,7 @@ const Layout: React.FC<LayoutProps> = ({
                 onClick={() => setThemeMode("dark")}
                 type="button"
               >
-                Dark
+                {t("topbar.theme.dark")}
               </button>
             </div>
 
@@ -639,7 +679,7 @@ const Layout: React.FC<LayoutProps> = ({
                     strokeWidth="2"
                   />
                 </svg>
-                <span>{locale === "en" ? "New Report" : "नवीन अहवाल"}</span>
+                <span>{t("topbar.newReport")}</span>
               </button>
             ) : null}
 

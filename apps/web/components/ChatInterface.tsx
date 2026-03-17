@@ -4,8 +4,10 @@ import {
   searchGroundingQuery,
 } from "@tali/gemini/client";
 import { ChatMessage } from "@tali/types";
+import { useLanguage } from "@/lib/LanguageContext";
 
 const ChatInterface: React.FC = () => {
+  const { t } = useLanguage();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -55,7 +57,7 @@ const ChatInterface: React.FC = () => {
       console.error("Chat Error:", err);
       const errorMsg: ChatMessage = {
         role: "model",
-        text: "क्षमस्व, उत्तर देण्यात तांत्रिक अडचण आली.",
+        text: t("chat.error"),
         timestamp: Date.now(),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -68,9 +70,9 @@ const ChatInterface: React.FC = () => {
     <div className="bg-white rounded-3xl shadow-xl flex flex-col h-[70vh] border border-slate-100 overflow-hidden">
       <div className="bg-indigo-600 p-6 text-white flex justify-between items-center">
         <div>
-          <h2 className="text-xl font-bold">शिक्षक सहाय्यक (AI Assistant)</h2>
+          <h2 className="text-xl font-bold">{t("chat.title")}</h2>
           <p className="text-xs text-indigo-100 opacity-80">
-            शैक्षणिक शंका विचारा
+            {t("chat.subtitle")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -81,7 +83,7 @@ const ChatInterface: React.FC = () => {
             }}
             className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${useThinking ? "bg-white text-indigo-600 border-white" : "bg-transparent text-white border-white/40"}`}
           >
-            {useThinking ? "🧠 विचार चालू (Thinking On)" : "💡 सामान्य मोड"}
+            {useThinking ? `🧠 ${t("chat.thinkingMode")} On` : `💡 ${t("chat.thinkingMode")}`}
           </button>
           <button
             onClick={() => {
@@ -90,7 +92,7 @@ const ChatInterface: React.FC = () => {
             }}
             className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${useSearch ? "bg-white text-indigo-600 border-white" : "bg-transparent text-white border-white/40"}`}
           >
-            {useSearch ? "🔍 सर्च चालू (Search On)" : "🌐 फक्त डेटा"}
+            {useSearch ? `🔍 ${t("chat.searchMode")} On` : `🌐 ${t("chat.searchMode")}`}
           </button>
         </div>
       </div>
@@ -100,8 +102,7 @@ const ChatInterface: React.FC = () => {
           <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-4 opacity-60">
             <span className="text-6xl">🤖</span>
             <p className="text-center max-w-xs">
-              मी तुम्हाला प्रश्नपत्रिका तयार करण्यास किंवा उत्तरांचे विश्लेषण
-              करण्यास मदत करू शकतो.
+              {t("chat.empty")}
             </p>
           </div>
         )}
@@ -125,7 +126,7 @@ const ChatInterface: React.FC = () => {
               {msg.sources && msg.sources.length > 0 && (
                 <div className="mt-4 pt-3 border-t border-slate-200/50">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
-                    अधिक माहितीसाठी संदर्भ:
+                    {t("chat.sources")}:
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {msg.sources.map((src, sIdx) => {
@@ -142,7 +143,7 @@ const ChatInterface: React.FC = () => {
                                 : "bg-indigo-50 border-indigo-100 text-indigo-600 hover:bg-indigo-100"
                             }`}
                           >
-                            🔗 {src.web.title || "माहिती स्रोत"}
+                            🔗 {src.web.title || t("chat.sources")}
                           </a>
                         );
                       }
@@ -179,7 +180,7 @@ const ChatInterface: React.FC = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && handleSend()}
-            placeholder="तुमचा प्रश्न येथे विचारा..."
+            placeholder={t("chat.inputPlaceholder")}
             className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm shadow-sm"
           />
           <button

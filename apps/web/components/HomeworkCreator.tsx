@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { complexEducationalQuery } from "@tali/gemini/client";
 import { TextbookSource } from "@tali/types";
+import { useLanguage } from "@/lib/LanguageContext";
 
 interface HomeworkCreatorProps {
   sources: TextbookSource[];
 }
 
 const HomeworkCreator: React.FC<HomeworkCreatorProps> = ({ sources }) => {
+  const { t } = useLanguage();
   const [selectedSource, setSelectedSource] = useState<string>(
     sources[0]?.id || "",
   );
@@ -28,7 +30,7 @@ const HomeworkCreator: React.FC<HomeworkCreatorProps> = ({ sources }) => {
       const result = await complexEducationalQuery(prompt, true);
       setHomework(result);
     } catch (err) {
-      alert("गृहपाठ तयार करताना अडचण आली.");
+      alert(t("homework.error"));
     } finally {
       setLoading(false);
     }
@@ -38,12 +40,12 @@ const HomeworkCreator: React.FC<HomeworkCreatorProps> = ({ sources }) => {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
         <h2 className="text-2xl font-bold text-slate-800 mb-6">
-          गृहपाठ निर्माता (Homework Creator)
+          {t("homework.title")}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="space-y-2">
             <label className="text-xs font-black text-slate-400 uppercase tracking-widest">
-              पाठ्यपुस्तक निवडा
+              {t("homework.selectBook")}
             </label>
             <select
               value={selectedSource}
@@ -59,11 +61,11 @@ const HomeworkCreator: React.FC<HomeworkCreatorProps> = ({ sources }) => {
           </div>
           <div className="space-y-2">
             <label className="text-xs font-black text-slate-400 uppercase tracking-widest">
-              धडा किंवा विषयाचा घटक
+              {t("homework.topic")}
             </label>
             <input
               type="text"
-              placeholder="उदा. बेरीज, सावित्रीबाई फुले, सूर्यमाला..."
+              placeholder={t("homework.topicPlaceholder")}
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700"
@@ -78,11 +80,11 @@ const HomeworkCreator: React.FC<HomeworkCreatorProps> = ({ sources }) => {
           {loading ? (
             <>
               <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
-              <span>गृहपाठ तयार होत आहे...</span>
+              <span>{t("homework.generating")}</span>
             </>
           ) : (
             <>
-              <span>गृहपाठ तयार करा</span>
+              <span>{t("homework.generate")}</span>
               <span className="text-xl">✍️</span>
             </>
           )}
@@ -93,13 +95,13 @@ const HomeworkCreator: React.FC<HomeworkCreatorProps> = ({ sources }) => {
         <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 animate-in zoom-in-95 duration-700">
           <div className="flex justify-between items-center mb-8 pb-4 border-b border-slate-100">
             <h3 className="text-xl font-black text-indigo-900">
-              नव्याने तयार केलेला गृहपाठ
+              {t("homework.result")}
             </h3>
             <button
               onClick={() => window.print()}
               className="text-indigo-600 font-bold flex items-center gap-2 hover:underline"
             >
-              <span>प्रिंट काढा</span> 🖨️
+              <span>{t("homework.print")}</span> 🖨️
             </button>
           </div>
           <div className="prose prose-indigo max-w-none">

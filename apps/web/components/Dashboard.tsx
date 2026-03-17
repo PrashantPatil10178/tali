@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { GradingResult } from "@tali/types";
+import { useLanguage } from "@/lib/LanguageContext";
 
 interface DashboardProps {
   readonly history: GradingResult[];
@@ -13,25 +14,10 @@ const FALLBACK_SUBJECTS = [
   { subject: "Hist", average: 88 },
 ] as const;
 
-const FALLBACK_ATTENTION = [
-  {
-    name: "Arjun Sharma",
-    detail: "Missed 3 Math assignments this week",
-    severity: "Critical",
-    tone: "critical",
-  },
-  {
-    name: "Priya Patil",
-    detail: "Science score dropped by 15%",
-    severity: "Review",
-    tone: "review",
-  },
-  {
-    name: "Rohan Deshmukh",
-    detail: "Low participation in Marathi class",
-    severity: "Review",
-    tone: "review",
-  },
+const FALLBACK_ATTENTION_KEYS = [
+  { name: "Arjun Sharma", detailKey: "dashboard.fallback.attention1", severityKey: "dashboard.fallback.severity.critical", tone: "critical" },
+  { name: "Priya Patil",  detailKey: "dashboard.fallback.attention2", severityKey: "dashboard.fallback.severity.review",   tone: "review" },
+  { name: "Rohan Deshmukh", detailKey: "dashboard.fallback.attention3", severityKey: "dashboard.fallback.severity.review", tone: "review" },
 ] as const;
 
 const WEEKLY_ACTIVITY = [18, 36, 58, 46, 74] as const;
@@ -80,6 +66,7 @@ const getInitials = (value: string): string =>
 export default function Dashboard({
   history,
 }: DashboardProps): React.JSX.Element {
+  const { t } = useLanguage();
   const computed = useMemo(() => {
     const normalizedScores = history.map((result) =>
       Math.round((result.score / result.totalMarks) * 100),
@@ -174,31 +161,35 @@ export default function Dashboard({
       scoreDistribution,
       subjectComparison,
       attentionItems:
-        attentionItems.length > 0 ? attentionItems : [...FALLBACK_ATTENTION],
+        attentionItems.length > 0 ? attentionItems : FALLBACK_ATTENTION_KEYS.map((item) => ({
+          name: item.name,
+          detail: t(item.detailKey),
+          severity: t(item.severityKey),
+          tone: item.tone,
+        })),
       subjectCurve: buildSubjectCurve(
         subjectComparison.map((subject) => subject.average),
       ),
     };
-  }, [history]);
+  }, [history, t]);
 
   return (
     <div className="space-y-8 pb-8 animate-in fade-in duration-500">
       <section className="dashboard-hero-panel">
         <div className="relative z-10 flex flex-1 flex-col justify-center">
-          <span className="dashboard-hero-badge">AI Teacher Workspace</span>
+          <span className="dashboard-hero-badge">{t("dashboard.badge")}</span>
           <h1 className="mt-6 max-w-2xl font-display text-4xl font-extrabold leading-tight tracking-tight text-slate-950 sm:text-5xl xl:text-6xl dark:text-white">
-            Namaste, Teacher! Your classroom pulse is ready.
+            {t("dashboard.hero.heading")}
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg dark:text-slate-300">
-            Track student momentum, surface attention points, and move faster
-            with a polished AI-first teaching workspace.
+            {t("dashboard.hero.subheading")}
           </p>
 
           <div className="mt-8 grid max-w-2xl grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="dashboard-hero-metric">
               <span className="dashboard-hero-metric-value">24/7</span>
               <span className="dashboard-hero-metric-label">
-                Insight support
+                {t("dashboard.hero.insightSupport")}
               </span>
             </div>
             <div className="dashboard-hero-metric">
@@ -206,14 +197,14 @@ export default function Dashboard({
                 {computed.totalAssessed || 34}
               </span>
               <span className="dashboard-hero-metric-label">
-                Assessments tracked
+                {t("dashboard.hero.assessmentsTracked")}
               </span>
             </div>
             <div className="dashboard-hero-metric">
               <span className="dashboard-hero-metric-value">
                 {computed.averageScore}%
               </span>
-              <span className="dashboard-hero-metric-label">Class average</span>
+              <span className="dashboard-hero-metric-label">{t("dashboard.hero.classAverage")}</span>
             </div>
           </div>
         </div>
@@ -222,7 +213,7 @@ export default function Dashboard({
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-200/90">
-                Weekly momentum
+                {t("dashboard.hero.weeklyMomentum")}
               </p>
               <p className="mt-2 font-display text-3xl font-extrabold text-white">
                 +12%
@@ -269,11 +260,10 @@ export default function Dashboard({
               <span>★</span>
             </div>
             <p className="text-sm leading-7 text-indigo-50/90">
-              "The dashboard helps me identify who needs intervention before the
-              next class even starts."
+              {t("dashboard.hero.testimonial")}
             </p>
             <p className="mt-4 text-sm font-semibold text-white">
-              Lead Teacher, TALI Pilot School
+              {t("dashboard.hero.testimonialAuthor")}
             </p>
           </div>
         </div>
@@ -306,13 +296,13 @@ export default function Dashboard({
             </span>
           </div>
           <h3 className="mt-6 text-sm font-semibold text-slate-600 dark:text-slate-300">
-            High Performance
+            {t("dashboard.highPerformance")}
           </h3>
           <p className="mt-2 font-display text-4xl font-extrabold text-slate-950 dark:text-white">
             {computed.highPerformers > 0 ? computed.highPerformers : 34}
           </p>
           <p className="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
-            Students excelling
+            {t("dashboard.studentsExcelling")}
           </p>
         </div>
 
@@ -341,13 +331,13 @@ export default function Dashboard({
             </span>
           </div>
           <h3 className="mt-6 text-sm font-semibold text-slate-600 dark:text-slate-300">
-            Moderate Progress
+            {t("dashboard.moderateProgress")}
           </h3>
           <p className="mt-2 font-display text-4xl font-extrabold text-slate-950 dark:text-white">
             {computed.moderatePerformers > 0 ? computed.moderatePerformers : 12}
           </p>
           <p className="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
-            Students holding steady
+            {t("dashboard.studentsHolding")}
           </p>
         </div>
 
@@ -374,13 +364,13 @@ export default function Dashboard({
             </span>
           </div>
           <h3 className="mt-6 text-sm font-semibold text-slate-600 dark:text-slate-300">
-            Needs Help
+            {t("dashboard.needsHelp")}
           </h3>
           <p className="mt-2 font-display text-4xl font-extrabold text-slate-950 dark:text-white">
             {computed.needsHelp > 0 ? computed.needsHelp : 4}
           </p>
           <p className="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
-            Students needing attention
+            {t("dashboard.studentsNeedingAttention")}
           </p>
         </div>
       </section>
@@ -390,10 +380,10 @@ export default function Dashboard({
           <div className="mb-8 flex items-start justify-between gap-4">
             <div>
               <h2 className="font-display text-2xl font-bold text-slate-950 dark:text-white">
-                Score Distribution
+                {t("dashboard.scoreDistribution")}
               </h2>
               <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                Overall class performance average
+                {t("dashboard.classPerformanceAvg")}
               </p>
             </div>
             <div className="text-right">
@@ -401,7 +391,7 @@ export default function Dashboard({
                 {computed.averageScore}%
               </span>
               <p className="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
-                Avg score
+                {t("dashboard.avgScore")}
               </p>
             </div>
           </div>
@@ -430,14 +420,14 @@ export default function Dashboard({
           <div className="mb-8 flex items-start justify-between gap-4">
             <div>
               <h2 className="font-display text-2xl font-bold text-slate-950 dark:text-white">
-                Subject Comparison
+                {t("dashboard.subjectComparison")}
               </h2>
               <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                Weekly trend per subject
+                {t("dashboard.weeklyTrend")}
               </p>
             </div>
             <div className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-              Term 1
+              {t("dashboard.term1")}
             </div>
           </div>
 
@@ -509,17 +499,17 @@ export default function Dashboard({
         <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-6 py-5 dark:border-slate-800">
           <div>
             <h2 className="font-display text-2xl font-bold text-slate-950 dark:text-white">
-              Attention Required
+              {t("dashboard.attentionRequired")}
             </h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Students who may need immediate follow-up this week
+              {t("dashboard.attentionSubtitle")}
             </p>
           </div>
           <button
             className="text-sm font-bold text-(--color-primary)"
             type="button"
           >
-            View All Students
+            {t("dashboard.viewAllStudents")}
           </button>
         </div>
 

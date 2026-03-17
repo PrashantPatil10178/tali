@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { generateLearningPlan } from "@tali/gemini/client";
 import { GradingResult, LearningPlan } from "@tali/types";
+import { useLanguage } from "@/lib/LanguageContext";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -35,6 +36,7 @@ const ResultView: React.FC<ResultViewProps> = ({
   const [days, setDays] = useState(5);
   const [minutes, setMinutes] = useState(20);
   const [learningPlan, setLearningPlan] = useState<LearningPlan | null>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     // जेव्हा सिलेक्टेड रिझल्ट बदलतो, तेव्हा स्टेट अपडेट करा
@@ -232,7 +234,7 @@ const ResultView: React.FC<ResultViewProps> = ({
               onClick={onClose}
               className="px-10 py-3 border-2 border-slate-200 text-slate-500 font-bold rounded-2xl hover:bg-slate-50 transition-all"
             >
-              परत जा
+              {t("result.backToScan")}
             </button>
             <button
               onClick={onScanAnother}
@@ -278,14 +280,14 @@ const ResultView: React.FC<ResultViewProps> = ({
                       {res.score}/{res.totalMarks}
                     </div>
                     <p className="text-[10px] font-black text-slate-400 uppercase">
-                      गुण
+                      {t("result.score")}
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-6">
                   <h3 className="text-xl font-black text-slate-800 border-l-4 border-indigo-600 pl-4">
-                    अभिप्राय
+                    {t("result.feedback")}
                   </h3>
                   <p className="text-slate-700 italic text-lg leading-relaxed">
                     {res.feedback}
@@ -436,10 +438,10 @@ const ResultView: React.FC<ResultViewProps> = ({
             </h2>
             <div className="flex gap-4">
               <span className="bg-indigo-600 text-white px-6 py-2 rounded-full text-xs font-bold shadow-lg">
-                विषय: {selectedResult.subject}
+                {t("result.subject")}: {selectedResult.subject}
               </span>
               <span className="bg-white border border-slate-200 px-6 py-2 rounded-full text-xs font-bold text-slate-600 shadow-sm">
-                गुण: {selectedResult.score}/{selectedResult.totalMarks}
+                {t("result.score")}: {selectedResult.score}/{selectedResult.totalMarks}
               </span>
             </div>
           </div>
@@ -463,7 +465,7 @@ const ResultView: React.FC<ResultViewProps> = ({
                 🗣️
               </div>
               <h3 className="text-2xl font-black text-slate-800">
-                गुरुजींचा अभिप्राय
+                {t("result.feedback")}
               </h3>
             </div>
             <div className="bg-indigo-50/50 p-10 rounded-[2.5rem] border-l-[10px] border-indigo-500 text-indigo-900 font-bold text-xl leading-relaxed italic shadow-inner">

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { StudentProfileData } from "@tali/types";
+import { useLanguage } from "@/lib/LanguageContext";
 
 interface StudentsListProps {
   students: StudentProfileData[];
@@ -10,6 +11,7 @@ const StudentsList: React.FC<StudentsListProps> = ({
   students,
   onSelectStudent,
 }) => {
+  const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredStudents = students.filter((s) =>
@@ -20,15 +22,15 @@ const StudentsList: React.FC<StudentsListProps> = ({
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">विद्यार्थी यादी</h2>
+          <h2 className="text-2xl font-bold text-slate-800">{t("students.title")}</h2>
           <p className="text-slate-500 text-sm">
-            तुमच्या वर्गातील सर्व विद्यार्थ्यांची माहिती
+            {t("students.subtitle")}
           </p>
         </div>
         <div className="relative w-full md:w-64">
           <input
             type="text"
-            placeholder="विद्यार्थी शोधा..."
+            placeholder={t("students.search")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-white border border-slate-200 rounded-xl px-10 py-2.5 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none transition-all"
@@ -53,7 +55,7 @@ const StudentsList: React.FC<StudentsListProps> = ({
         {filteredStudents.length === 0 ? (
           <div className="col-span-full py-20 text-center bg-white rounded-3xl border border-dashed border-slate-200">
             <p className="text-slate-400 italic">
-              कोणताही विद्यार्थी सापडला नाही.
+              {t("students.notFound")}
             </p>
           </div>
         ) : (
@@ -71,13 +73,13 @@ const StudentsList: React.FC<StudentsListProps> = ({
                   <h3 className="font-bold text-slate-800 truncate">
                     {student.name}
                   </h3>
-                  <p className="text-xs text-slate-400 mb-2">वर्ग १० वी अ</p>
+                  <p className="text-xs text-slate-400 mb-2">{t("students.class")}</p>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-bold">
-                      {student.testCount} चाचण्या
+                      {student.testCount} {t("students.tests")}
                     </span>
                     <span className="text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-bold">
-                      {student.averageScore.toFixed(0)}% सरासरी
+                      {student.averageScore.toFixed(0)}% {t("students.avg")}
                     </span>
                   </div>
                 </div>

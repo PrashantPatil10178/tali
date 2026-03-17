@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --font-body:
     "Lexend", "Noto Sans Devanagari", ui-sans-serif, system-ui, sans-serif;
@@ -115,6 +117,43 @@ a {
   box-shadow: 0 18px 50px -28px rgb(15 23 42 / 0.28);
 }
 
+.sidebar-nav-tooltip {
+  position: absolute;
+  left: calc(100% + 0.85rem);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  white-space: nowrap;
+  border-radius: 0.75rem;
+  background: #0f172a;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: white;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: 0 8px 24px rgb(15 23 42 / 0.22);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+  z-index: 60;
+  display: none;
+}
+
+.dark .sidebar-nav-tooltip {
+  background: #1e293b;
+}
+
+@media (min-width: 1024px) {
+  .sidebar-nav-tooltip {
+    display: block;
+  }
+}
+
+.group:hover .sidebar-nav-tooltip {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
 .dashboard-brand-mark {
   display: inline-flex;
   height: 3rem;
@@ -170,11 +209,19 @@ a {
 }
 
 .dashboard-nav-item-idle {
-  color: rgb(71 85 105);
+  color: rgb(51 65 85);
+}
+
+.dark .dashboard-nav-item-idle {
+  color: rgb(148 163 184);
 }
 
 .dashboard-nav-item-idle:hover {
   background: rgb(241 245 249 / 0.86);
+}
+
+.dark .dashboard-nav-item-idle:hover {
+  background: rgb(255 255 255 / 0.06);
 }
 
 .dashboard-nav-item-active {
@@ -190,9 +237,14 @@ a {
   align-items: center;
   justify-content: center;
   border-radius: 0.9rem;
-  background: rgb(255 255 255 / 0.72);
+  background: rgb(79 70 229 / 0.1);
   color: #4f46e5;
   flex-shrink: 0;
+}
+
+.dark .dashboard-nav-icon {
+  background: rgb(255 255 255 / 0.12);
+  color: rgb(165 180 252);
 }
 
 .dashboard-nav-icon-active {
@@ -725,6 +777,11 @@ a {
   line-height: 1.4;
   color: rgb(224 231 255 / 0.9);
 }
+
+.reports-dashed-upload {
+  background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='32' ry='32' stroke='%234F46E566' stroke-width='3' stroke-dasharray='14%2c 14' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+}
+
 
 .auth-mobile-hero {
   position: relative;

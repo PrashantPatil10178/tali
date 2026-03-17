@@ -12,6 +12,7 @@ import {
   Cell,
 } from "recharts";
 import { StudentProfileData, StudentNote, GradingResult } from "@tali/types";
+import { useLanguage } from "@/lib/LanguageContext";
 
 interface StudentProfileProps {
   student: StudentProfileData;
@@ -35,6 +36,7 @@ const StudentProfile: React.FC<StudentProfileProps> = ({
   onAddNote,
   onDeleteNote,
 }) => {
+  const { t } = useLanguage();
   const [newNote, setNewNote] = useState("");
   const [isMounted, setIsMounted] = useState(false);
 
@@ -122,7 +124,7 @@ const StudentProfile: React.FC<StudentProfileProps> = ({
         <button
           onClick={onBack}
           className="p-2 hover:bg-slate-200 rounded-full transition-all text-slate-600 active:scale-90"
-          aria-label="परत जा"
+          aria-label={t("profile.back")}
         >
           <svg
             className="w-6 h-6"
@@ -175,7 +177,7 @@ const StudentProfile: React.FC<StudentProfileProps> = ({
             <div className="grid grid-cols-2 gap-4 w-full">
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">
-                  सरासरी
+                  {t("profile.avgScore")}
                 </p>
                 <p className="text-xl font-black text-indigo-600">
                   {student.averageScore.toFixed(1)}%
@@ -183,7 +185,7 @@ const StudentProfile: React.FC<StudentProfileProps> = ({
               </div>
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">
-                  चाचण्या
+                  {t("profile.testsGiven")}
                 </p>
                 <p className="text-xl font-black text-amber-500">
                   {student.testCount}
@@ -248,7 +250,7 @@ const StudentProfile: React.FC<StudentProfileProps> = ({
           {/* Teacher Notes Section */}
           <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col h-full max-h-[400px]">
             <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <span className="text-indigo-600">📝</span> शिक्षक नोट्स
+              <span className="text-indigo-600">📝</span> {t("profile.notes")}
             </h3>
 
             <div className="flex-1 overflow-y-auto mb-4 pr-2 space-y-4 scrollbar-thin scrollbar-thumb-slate-200">
@@ -295,7 +297,7 @@ const StudentProfile: React.FC<StudentProfileProps> = ({
                 value={newNote}
                 onChange={(e) => setNewNote(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && handleAddNote()}
-                placeholder="नोट लिहा..."
+                placeholder={t("profile.notePlaceholder")}
                 className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-400"
               />
               <button
@@ -422,7 +424,7 @@ const StudentProfile: React.FC<StudentProfileProps> = ({
           <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
             <div className="p-6 border-b border-slate-50">
               <h3 className="text-lg font-bold text-slate-800">
-                निकालांचा इतिहास
+                {t("profile.history")}
               </h3>
             </div>
             <div className="overflow-x-auto">

@@ -2,6 +2,7 @@ import { cors } from "@elysiajs/cors";
 import { Elysia } from "elysia";
 import { auth } from "@/lib/auth";
 import { geminiRoutes } from "@/modules/gemini/routes";
+import { reportsRoutes } from "@/modules/reports/routes";
 
 const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:3000")
   .split(",")
@@ -38,6 +39,7 @@ export const app = new Elysia()
     }),
   )
   .use(geminiRoutes)
+  .use(reportsRoutes)
   .get(
     "/api/me",
     ({ session, user }) => ({
