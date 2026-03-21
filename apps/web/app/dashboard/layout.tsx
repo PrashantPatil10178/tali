@@ -64,18 +64,18 @@ export default function DashboardLayout({
 
   return (
     <LanguageProvider>
-    <DashboardProvider>
-      <Layout
-        activeSection={activeSection}
-        currentUserName={session.user.name ?? session.user.email ?? "Teacher"}
-        currentUserRole={session.user.email ?? "Authenticated educator"}
-        isSigningOut={isSigningOut}
-        onNavigate={handleNavigate}
-        onSignOut={handleSignOut}
-      >
-        {children}
-      </Layout>
-    </DashboardProvider>
+      <DashboardProvider>
+        <Layout
+          activeSection={activeSection}
+          currentUserName={session.user.name ?? session.user.email ?? "Teacher"}
+          currentUserRole={session.user.email ?? "Authenticated educator"}
+          isSigningOut={isSigningOut}
+          onNavigate={handleNavigate}
+          onSignOut={handleSignOut}
+        >
+          {children}
+        </Layout>
+      </DashboardProvider>
     </LanguageProvider>
   );
 }

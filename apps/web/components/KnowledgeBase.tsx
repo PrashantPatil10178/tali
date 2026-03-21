@@ -71,9 +71,7 @@ const KnowledgeBase: React.FC = () => {
           <h2 className="text-2xl font-bold text-slate-800">
             {t("knowledge.title")}
           </h2>
-          <p className="text-slate-500 text-sm">
-            {t("knowledge.subtitle")}
-          </p>
+          <p className="text-slate-500 text-sm">{t("knowledge.subtitle")}</p>
         </div>
         <label
           className={`cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-indigo-100 ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}

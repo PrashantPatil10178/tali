@@ -103,7 +103,9 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
               <tr>
                 <th className="px-8 py-4">{t("attendance.student")}</th>
                 <th className="px-8 py-4">{t("attendance.class")}</th>
-                <th className="px-8 py-4 text-center">{t("attendance.status")}</th>
+                <th className="px-8 py-4 text-center">
+                  {t("attendance.status")}
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -122,7 +124,9 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
                       </span>
                     </div>
                   </td>
-                  <td className="px-8 py-4 text-slate-500 text-sm">{t("attendance.classLabel")}</td>
+                  <td className="px-8 py-4 text-slate-500 text-sm">
+                    {t("attendance.classLabel")}
+                  </td>
                   <td className="px-8 py-4">
                     <div className="flex justify-center">
                       <button

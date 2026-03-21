@@ -22,10 +22,10 @@ const StudentsList: React.FC<StudentsListProps> = ({
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">{t("students.title")}</h2>
-          <p className="text-slate-500 text-sm">
-            {t("students.subtitle")}
-          </p>
+          <h2 className="text-2xl font-bold text-slate-800">
+            {t("students.title")}
+          </h2>
+          <p className="text-slate-500 text-sm">{t("students.subtitle")}</p>
         </div>
         <div className="relative w-full md:w-64">
           <input
@@ -54,9 +54,7 @@ const StudentsList: React.FC<StudentsListProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredStudents.length === 0 ? (
           <div className="col-span-full py-20 text-center bg-white rounded-3xl border border-dashed border-slate-200">
-            <p className="text-slate-400 italic">
-              {t("students.notFound")}
-            </p>
+            <p className="text-slate-400 italic">{t("students.notFound")}</p>
           </div>
         ) : (
           filteredStudents.map((student, idx) => (
@@ -73,7 +71,9 @@ const StudentsList: React.FC<StudentsListProps> = ({
                   <h3 className="font-bold text-slate-800 truncate">
                     {student.name}
                   </h3>
-                  <p className="text-xs text-slate-400 mb-2">{t("students.class")}</p>
+                  <p className="text-xs text-slate-400 mb-2">
+                    {t("students.class")}
+                  </p>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-bold">
                       {student.testCount} {t("students.tests")}

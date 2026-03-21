@@ -244,6 +244,32 @@ export const EN: Record<string, string> = {
   "pdf.marksCol": "Marks",
   "pdf.answerCol": "Student Answer",
   "pdf.analysisCol": "Analysis",
+
+  // Scan Modal
+  "scan.modal.title": "Scan Answer Sheets",
+  "scan.modal.subtitle": "AI grades every question automatically",
+  "scan.tab.bulk": "Bulk Upload",
+  "scan.tab.paper": "Question Paper",
+  "scan.tab.paperOptional": "Optional",
+  "scan.paper.title": "Upload Question Paper",
+  "scan.paper.desc":
+    "Upload the question paper or answer key to give the AI precise grading context. This is completely optional — AI can grade without it.",
+  "scan.paper.drop": "Drop question paper here",
+  "scan.paper.dropSub": "PDF, JPG or PNG of the question paper",
+  "scan.paper.uploaded": "Question paper uploaded",
+  "scan.paper.remove": "Remove",
+  "scan.paper.change": "Change",
+  "scan.bulk.report": "Download Bulk Report",
+  "scan.bulk.reportCount": "reports ready",
+
+  // Language Picker
+  "langPicker.title": "Choose Report Language",
+  "langPicker.subtitle": "Select the language for the generated PDF report.",
+  "langPicker.english": "English",
+  "langPicker.marathi": "मराठी (Marathi)",
+  "langPicker.cancel": "Cancel",
+  "langPicker.generate": "Generate Report",
+  "langPicker.generateBulk": "Download All Reports",
 };
 
 export const MR: Record<string, string> = {
@@ -491,4 +517,30 @@ export const MR: Record<string, string> = {
   "pdf.marksCol": "गुण",
   "pdf.answerCol": "विद्यार्थ्याचे उत्तर",
   "pdf.analysisCol": "विश्लेषण",
+
+  // Scan Modal
+  "scan.modal.title": "उत्तरपत्रिका स्कॅन करा",
+  "scan.modal.subtitle": "AI आपोआप प्रत्येक प्रश्न तपासतो",
+  "scan.tab.bulk": "सामूहिक अपलोड",
+  "scan.tab.paper": "प्रश्नपत्रिका",
+  "scan.tab.paperOptional": "पर्यायी",
+  "scan.paper.title": "प्रश्नपत्रिका अपलोड करा",
+  "scan.paper.desc":
+    "AI ला अचूक तपासणीसाठी संदर्भ देण्यासाठी प्रश्नपत्रिका अपलोड करा. हे पूर्णपणे पर्यायी आहे — AI शिवाय देखील तपासू शकतो.",
+  "scan.paper.drop": "इथे प्रश्नपत्रिका टाका",
+  "scan.paper.dropSub": "प्रश्नपत्रिकेचा PDF, JPG किंवा PNG",
+  "scan.paper.uploaded": "प्रश्नपत्रिका अपलोड झाली",
+  "scan.paper.remove": "हटवा",
+  "scan.paper.change": "बदला",
+  "scan.bulk.report": "सर्व अहवाल डाउनलोड करा",
+  "scan.bulk.reportCount": "अहवाल तयार",
+
+  // Language Picker
+  "langPicker.title": "अहवालाची भाषा निवडा",
+  "langPicker.subtitle": "PDF अहवाल तुमच्या निवडलेल्या भाषेत तयार होईल.",
+  "langPicker.english": "English",
+  "langPicker.marathi": "मराठी",
+  "langPicker.cancel": "रद्द करा",
+  "langPicker.generate": "अहवाल तयार करा",
+  "langPicker.generateBulk": "सर्व अहवाल डाउनलोड करा",
 };

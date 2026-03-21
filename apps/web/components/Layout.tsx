@@ -565,7 +565,7 @@ const Layout: React.FC<LayoutProps> = ({
             </div>
 
             <div
-              className="dashboard-theme-toggle"
+              className="hidden sm:inline-flex dashboard-theme-toggle"
               role="group"
               aria-label="Theme selector"
             >
@@ -592,53 +592,6 @@ const Layout: React.FC<LayoutProps> = ({
                 {t("topbar.theme.dark")}
               </button>
             </div>
-
-            <button
-              aria-label={
-                themeMode === "dark"
-                  ? "Switch to light mode"
-                  : "Switch to dark mode"
-              }
-              className="dashboard-icon-button"
-              onClick={() =>
-                setThemeMode((current) =>
-                  current === "dark" ? "light" : "dark",
-                )
-              }
-              type="button"
-            >
-              {themeMode === "dark" ? (
-                <svg
-                  aria-hidden="true"
-                  className="size-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364 6.364-1.414-1.414M7.05 7.05 5.636 5.636m12.728 0L16.95 7.05M7.05 16.95l-1.414 1.414M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.8"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  aria-hidden="true"
-                  className="size-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M21 12.79A9 9 0 1 1 11.21 3c-.04.33-.06.66-.06 1a8 8 0 0 0 8 8c.34 0 .67-.02 1-.06Z"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.8"
-                  />
-                </svg>
-              )}
-            </button>
 
             <button
               aria-label="Notifications"

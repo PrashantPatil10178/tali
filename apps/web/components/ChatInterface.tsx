@@ -83,7 +83,9 @@ const ChatInterface: React.FC = () => {
             }}
             className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${useThinking ? "bg-white text-indigo-600 border-white" : "bg-transparent text-white border-white/40"}`}
           >
-            {useThinking ? `🧠 ${t("chat.thinkingMode")} On` : `💡 ${t("chat.thinkingMode")}`}
+            {useThinking
+              ? `🧠 ${t("chat.thinkingMode")} On`
+              : `💡 ${t("chat.thinkingMode")}`}
           </button>
           <button
             onClick={() => {
@@ -92,7 +94,9 @@ const ChatInterface: React.FC = () => {
             }}
             className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${useSearch ? "bg-white text-indigo-600 border-white" : "bg-transparent text-white border-white/40"}`}
           >
-            {useSearch ? `🔍 ${t("chat.searchMode")} On` : `🌐 ${t("chat.searchMode")}`}
+            {useSearch
+              ? `🔍 ${t("chat.searchMode")} On`
+              : `🌐 ${t("chat.searchMode")}`}
           </button>
         </div>
       </div>
@@ -101,9 +105,7 @@ const ChatInterface: React.FC = () => {
         {messages.length === 0 && (
           <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-4 opacity-60">
             <span className="text-6xl">🤖</span>
-            <p className="text-center max-w-xs">
-              {t("chat.empty")}
-            </p>
+            <p className="text-center max-w-xs">{t("chat.empty")}</p>
           </div>
         )}
         {messages.map((msg, idx) => (

@@ -441,7 +441,8 @@ const ResultView: React.FC<ResultViewProps> = ({
                 {t("result.subject")}: {selectedResult.subject}
               </span>
               <span className="bg-white border border-slate-200 px-6 py-2 rounded-full text-xs font-bold text-slate-600 shadow-sm">
-                {t("result.score")}: {selectedResult.score}/{selectedResult.totalMarks}
+                {t("result.score")}: {selectedResult.score}/
+                {selectedResult.totalMarks}
               </span>
             </div>
           </div>
