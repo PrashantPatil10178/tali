@@ -18,6 +18,21 @@ interface AuthShellProps {
   readonly children: React.ReactNode;
 }
 
+const TaliLogo = ({ className = "size-6" }: { className?: string }) => (
+  <svg
+    aria-hidden="true"
+    className={className}
+    fill="none"
+    viewBox="0 0 48 48"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M8.578 8.578C5.528 11.628 3.451 15.515 2.61 19.745c-.842 4.23-.41 8.616 1.241 12.601 1.651 3.985 4.446 7.392 8.033 9.788C15.47 44.531 19.686 45.81 24 45.81c4.314 0 8.53-1.279 12.117-3.676 3.586-2.396 6.382-5.803 8.032-9.788 1.651-3.985 2.083-8.37 1.242-12.6-.842-4.231-2.92-8.118-5.97-11.168L24 24 8.578 8.578Z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
 export default function AuthShell({
   title,
   subtitle,
@@ -35,152 +50,196 @@ export default function AuthShell({
   children,
 }: AuthShellProps) {
   return (
-    <div className="h-screen overflow-hidden bg-(--color-bg-light) text-(--color-text-light) antialiased">
-      <div className="flex h-full flex-col lg:flex-row">
-        <section className="auth-hero-panel hidden h-full lg:flex lg:w-[48%] xl:w-1/2">
-          <div className="auth-hero-glow auth-hero-glow-left" />
-          <div className="auth-hero-glow auth-hero-glow-right" />
-          <div className="relative z-10 flex max-w-2xl flex-col justify-center px-16 py-20 xl:px-24">
-            <div className="auth-hero-badge">AI Teacher Workspace</div>
-            <div className="mb-8 inline-flex size-16 items-center justify-center rounded-2xl bg-white/12 backdrop-blur-md">
-              <svg
-                aria-hidden="true"
-                className="size-8"
-                fill="none"
-                viewBox="0 0 48 48"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M8.578 8.578C5.528 11.628 3.451 15.515 2.61 19.745c-.842 4.23-.41 8.616 1.241 12.601 1.651 3.985 4.446 7.392 8.033 9.788C15.47 44.531 19.686 45.81 24 45.81c4.314 0 8.53-1.279 12.117-3.676 3.586-2.396 6.382-5.803 8.032-9.788 1.651-3.985 2.083-8.37 1.242-12.6-.842-4.231-2.92-8.118-5.97-11.168L24 24 8.578 8.578Z"
-                  fill="currentColor"
-                />
-              </svg>
-            </div>
-            <h1 className="font-display text-5xl font-extrabold leading-tight text-white xl:text-6xl">
-              {heroTitle}
-            </h1>
-            <p className="mt-6 max-w-xl text-lg leading-8 text-indigo-100/90 xl:text-xl">
-              {heroDescription}
-            </p>
-            <div className="mt-10 grid max-w-xl grid-cols-3 gap-3">
-              <div className="auth-hero-stat">
-                <span className="auth-hero-stat-value">24/7</span>
-                <span className="auth-hero-stat-label">Insight support</span>
-              </div>
-              <div className="auth-hero-stat">
-                <span className="auth-hero-stat-value">Smart</span>
-                <span className="auth-hero-stat-label">Class analysis</span>
-              </div>
-              <div className="auth-hero-stat">
-                <span className="auth-hero-stat-value">Secure</span>
-                <span className="auth-hero-stat-label">Teacher access</span>
-              </div>
-            </div>
-            <div className="mt-12 max-w-md rounded-3xl border border-white/12 bg-white/8 p-6 backdrop-blur-sm">
-              <div className="mb-3 flex gap-1 text-amber-300">
-                <span>★</span>
-                <span>★</span>
-                <span>★</span>
-                <span>★</span>
-                <span>★</span>
-              </div>
-              <p className="text-sm leading-7 text-indigo-50/90">{heroQuote}</p>
-              <p className="mt-4 text-sm font-semibold text-white">
-                {heroAuthor}
-              </p>
-            </div>
-          </div>
-        </section>
+    <div className="auth-shell">
+      {/* Left Hero Panel - Desktop Only */}
+      <section className="auth-hero-panel">
+        {/* Ambient glow effects */}
+        <div className="auth-hero-glow auth-hero-glow-1" />
+        <div className="auth-hero-glow auth-hero-glow-2" />
+        <div className="auth-hero-glow auth-hero-glow-3" />
 
-        <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="auth-mobile-hero shrink-0 lg:hidden">
-            <div className="auth-mobile-hero-inner">
-              <div className="auth-hero-badge auth-hero-badge-mobile">
-                AI Teacher Workspace
-              </div>
-              <h1 className="font-display text-3xl font-extrabold leading-tight text-white sm:text-4xl">
-                {heroTitle}
-              </h1>
-              <p className="mt-3 max-w-md text-sm leading-7 text-indigo-100/90 sm:text-base">
-                {heroDescription}
-              </p>
+        {/* Grid pattern overlay */}
+        <div className="auth-hero-grid" />
+
+        <div className="auth-hero-content">
+          {/* Top section with badge */}
+          <div className="auth-hero-top">
+            <div className="auth-hero-badge">
+              <span className="auth-hero-badge-dot" />
+              AI-Powered Education
             </div>
           </div>
 
-          <header className="shrink-0 flex items-center justify-between gap-4 px-5 py-4 sm:px-6 lg:px-12 lg:py-5">
-            <Link className="group flex items-center gap-3" href="/">
-              <div className="flex size-11 items-center justify-center rounded-xl bg-(--color-primary) text-white shadow-lg shadow-indigo-500/20 transition-transform group-hover:scale-105">
+          {/* Main content - centered */}
+          <div className="auth-hero-main">
+            <div className="auth-hero-icon">
+              <TaliLogo className="size-7" />
+            </div>
+            <h1 className="auth-hero-title">{heroTitle}</h1>
+            <p className="auth-hero-description">{heroDescription}</p>
+
+            {/* Feature pills */}
+            <div className="auth-hero-features">
+              <span className="auth-hero-feature">
                 <svg
-                  aria-hidden="true"
-                  className="size-6"
-                  fill="none"
-                  viewBox="0 0 48 48"
-                  xmlns="http://www.w3.org/2000/svg"
+                  className="size-3.5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
                 >
                   <path
-                    d="M8.578 8.578C5.528 11.628 3.451 15.515 2.61 19.745c-.842 4.23-.41 8.616 1.241 12.601 1.651 3.985 4.446 7.392 8.033 9.788C15.47 44.531 19.686 45.81 24 45.81c4.314 0 8.53-1.279 12.117-3.676 3.586-2.396 6.382-5.803 8.032-9.788 1.651-3.985 2.083-8.37 1.242-12.6-.842-4.231-2.92-8.118-5.97-11.168L24 24 8.578 8.578Z"
-                    fill="currentColor"
+                    fillRule="evenodd"
+                    d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+                    clipRule="evenodd"
                   />
                 </svg>
-              </div>
-              <div>
-                <p className="font-display text-2xl font-black tracking-tight">
-                  TALI
-                </p>
-                <p className="text-xs font-medium text-slate-500">
-                  AI Education Platform
-                </p>
-              </div>
-            </Link>
-
-            <div className="flex items-center gap-3 sm:gap-4 lg:gap-6">
-              <button
-                className="auth-language-toggle"
-                onClick={onToggleLanguage}
-                type="button"
-              >
-                <span className="text-base">🌐</span>
-                <span>{languageLabel}</span>
-              </button>
-              <Link
-                className="text-right text-sm font-semibold text-(--color-primary) transition-opacity hover:opacity-80"
-                href={topLinkHref}
-              >
-                {topLinkLabel}
-              </Link>
-            </div>
-          </header>
-
-          <main className="flex min-h-0 flex-1 items-start justify-center overflow-y-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-12 lg:py-8">
-            <div className="w-full max-w-115 space-y-5 sm:space-y-6 lg:my-auto">
-              <div>
-                <h2 className="font-display text-3xl font-bold text-slate-900 sm:text-4xl dark:text-slate-50">
-                  {title}
-                </h2>
-                <p className="mt-2 max-w-xl text-sm leading-7 text-slate-500 sm:text-base dark:text-slate-400">
-                  {subtitle}
-                </p>
-              </div>
-
-              <div className="auth-form-card">{children}</div>
-
-              <p className="text-center text-sm text-slate-600 dark:text-slate-400">
-                {footerText}{" "}
-                <Link
-                  className="font-bold text-(--color-primary) hover:underline"
-                  href={footerLinkHref}
+                Real-time Analytics
+              </span>
+              <span className="auth-hero-feature">
+                <svg
+                  className="size-3.5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
                 >
-                  {footerLinkLabel}
-                </Link>
-              </p>
+                  <path
+                    fillRule="evenodd"
+                    d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                Smart Insights
+              </span>
+              <span className="auth-hero-feature">
+                <svg
+                  className="size-3.5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                Secure Access
+              </span>
             </div>
-          </main>
+          </div>
 
-          <footer className="shrink-0 px-6 pb-4 text-center text-xs text-slate-400 lg:px-12 lg:pb-5 dark:text-slate-600">
-            © 2026 TALI AI Education Platform. All rights reserved.
-          </footer>
-        </section>
-      </div>
+          {/* Testimonial - bottom */}
+          <div className="auth-hero-bottom">
+            <div className="auth-hero-testimonial">
+              <div className="auth-hero-testimonial-stars">
+                {[...Array(5)].map((_, i) => (
+                  <svg
+                    key={i}
+                    className="size-3.5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
+              <p className="auth-hero-testimonial-text">{heroQuote}</p>
+              <p className="auth-hero-testimonial-author">{heroAuthor}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Right Form Panel */}
+      <section className="auth-form-panel">
+        {/* Mobile Hero Banner */}
+        <div className="auth-mobile-hero">
+          <div className="auth-mobile-hero-bg" />
+          <div className="auth-mobile-hero-content">
+            <div className="auth-hero-badge auth-hero-badge-mobile">
+              <span className="auth-hero-badge-dot" />
+              AI-Powered
+            </div>
+            <h1 className="auth-mobile-hero-title">{heroTitle}</h1>
+          </div>
+        </div>
+
+        {/* Header */}
+        <header className="auth-header">
+          <Link className="auth-brand" href="/">
+            <div className="auth-brand-icon">
+              <TaliLogo className="size-5" />
+            </div>
+            <div className="auth-brand-text">
+              <span className="auth-brand-name">TALI</span>
+              <span className="auth-brand-tagline">AI Education</span>
+            </div>
+          </Link>
+
+          <div className="auth-header-actions">
+            <button
+              className="auth-language-toggle"
+              onClick={onToggleLanguage}
+              type="button"
+              aria-label="Toggle language"
+            >
+              <svg
+                className="size-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
+                />
+              </svg>
+              <span className="auth-language-label">{languageLabel}</span>
+            </button>
+            <Link className="auth-header-link" href={topLinkHref}>
+              {topLinkLabel}
+              <svg
+                className="size-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+                />
+              </svg>
+            </Link>
+          </div>
+        </header>
+
+        {/* Main Form Area */}
+        <main className="auth-main">
+          <div className="auth-main-inner">
+            <div className="auth-form-header">
+              <h2 className="auth-form-title">{title}</h2>
+              <p className="auth-form-subtitle">{subtitle}</p>
+            </div>
+
+            <div className="auth-form-card">{children}</div>
+
+            <p className="auth-form-footer">
+              {footerText}{" "}
+              <Link className="auth-form-footer-link" href={footerLinkHref}>
+                {footerLinkLabel}
+              </Link>
+            </p>
+          </div>
+        </main>
+
+        {/* Footer */}
+        <footer className="auth-footer">
+          <span>© 2026 TALI</span>
+          <span className="auth-footer-dot">·</span>
+          <span>AI Education Platform</span>
+        </footer>
+      </section>
     </div>
   );
 }

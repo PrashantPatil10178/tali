@@ -33,6 +33,11 @@ export interface GradingResult {
   date: string;
   learningPlan?: LearningPlan;
   weakAreas: string[];
+  // New fields for exam metadata
+  className?: string;
+  schoolName?: string;
+  examType?: string;
+  rollNumber?: string;
 }
 
 export interface StudentNote {
