@@ -1,16 +1,43 @@
-import { GradingResult, LearningPlan } from "@tali/types";
+import { GradingResult, LearningPlan, StudentProfileData } from "@tali/types";
 
 type GeminiAction =
   | "analyzeAnswerSheet"
   | "generateLearningPlan"
   | "complexEducationalQuery"
-  | "searchGroundingQuery";
+  | "searchGroundingQuery"
+  | "translateToEnglish";
 
 const getApiBaseUrl = () =>
   (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001").replace(
     /\/$/,
     "",
   );
+
+// ── Student API Types ────────────────────────────────────────────────────────
+
+interface StudentListItem {
+  id: string;
+  name: string;
+  rollNumber: string;
+  className: string;
+  testCount: number;
+  averageScore: number;
+  lastTestDate: string | null;
+}
+
+interface DashboardStats {
+  totalStudents: number;
+  totalTests: number;
+  averageScore: number;
+  recentResults: GradingResult[];
+  subjectStats: Array<{ subject: string; averageScore: number; count: number }>;
+  studentsNeedingAttention: Array<{
+    name: string;
+    subject: string;
+    score: number;
+    weakAreas: string[];
+  }>;
+}
 
 async function callGeminiApi<T>(
   action: GeminiAction,
@@ -68,4 +95,120 @@ export const searchGroundingQuery = async (
     "searchGroundingQuery",
     { query },
   );
+};
+
+/**
+ * Translate a grading result from Marathi to English
+ */
+export const translateToEnglish = async (
+  result: GradingResult,
+): Promise<GradingResult> => {
+  return callGeminiApi<GradingResult>("translateToEnglish", { result });
+};
+
+// ── Student API Functions ────────────────────────────────────────────────────
+
+/**
+ * Save a grading result to the database (auto-creates student if needed)
+ */
+export const saveGradingResult = async (
+  result: GradingResult,
+): Promise<{ success: boolean; studentId?: string; analysisId?: string; error?: string }> => {
+  const response = await fetch(`${getApiBaseUrl()}/api/students/results`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ result }),
+  });
+
+  return response.json();
+};
+
+/**
+ * Save a learning plan for an analysis
+ */
+export const saveLearningPlan = async (
+  analysisId: string,
+  plan: LearningPlan,
+): Promise<{ success: boolean; planId?: string; error?: string }> => {
+  const response = await fetch(`${getApiBaseUrl()}/api/students/learning-plans`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ analysisId, plan }),
+  });
+
+  return response.json();
+};
+
+/**
+ * Get all students with their stats
+ */
+export const getAllStudents = async (): Promise<{
+  success: boolean;
+  students: StudentListItem[];
+  error?: string;
+}> => {
+  const response = await fetch(`${getApiBaseUrl()}/api/students`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  return response.json();
+};
+
+/**
+ * Get a student's full profile with history
+ */
+export const getStudentProfile = async (
+  studentId: string,
+): Promise<{
+  success: boolean;
+  profile?: {
+    id: string;
+    name: string;
+    rollNumber: string;
+    className: string;
+    results: GradingResult[];
+    learningPlans: LearningPlan[];
+  };
+  error?: string;
+}> => {
+  const response = await fetch(`${getApiBaseUrl()}/api/students/${studentId}`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  return response.json();
+};
+
+/**
+ * Get all grading history
+ */
+export const getAllGradingHistory = async (): Promise<{
+  success: boolean;
+  history: GradingResult[];
+  error?: string;
+}> => {
+  const response = await fetch(`${getApiBaseUrl()}/api/students/history/all`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  return response.json();
+};
+
+/**
+ * Get dashboard statistics
+ */
+export const getDashboardStats = async (): Promise<{
+  success: boolean;
+  error?: string;
+} & Partial<DashboardStats>> => {
+  const response = await fetch(`${getApiBaseUrl()}/api/students/dashboard/stats`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  return response.json();
 };

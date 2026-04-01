@@ -4,6 +4,7 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -14,8 +15,12 @@ import {
   StudentProfileData,
   TextbookSource,
 } from "@tali/types";
+import {
+  getAllGradingHistory,
+  saveGradingResult as saveResultToApi,
+} from "@tali/gemini/client";
 
-// ── Initial data ────────────────────────────────────────────────────────────
+// ── Textbook data (kept as system knowledge) ─────────────────────────────────
 
 const INITIAL_KNOWLEDGE: TextbookSource[] = [
   {
@@ -55,29 +60,6 @@ const INITIAL_KNOWLEDGE: TextbookSource[] = [
   },
 ];
 
-const MOCK_HISTORY: GradingResult[] = [
-  {
-    studentName: "अभिषेक पाटील",
-    subject: "गणित",
-    score: 42,
-    totalMarks: 50,
-    feedback: "उत्तम प्रयत्न! फक्त भूमितीवर अधिक लक्ष द्या.",
-    date: new Date().toISOString(),
-    corrections: [],
-    weakAreas: ["भूमिती", "त्रिकोणमिती"],
-  },
-  {
-    studentName: "प्रिया कुलकर्णी",
-    subject: "विज्ञान",
-    score: 48,
-    totalMarks: 50,
-    feedback: "शाबास! संकल्पना स्पष्ट आहेत.",
-    date: new Date().toISOString(),
-    corrections: [],
-    weakAreas: [],
-  },
-];
-
 // ── Context shape ────────────────────────────────────────────────────────────
 
 interface DashboardContextValue {
@@ -85,6 +67,7 @@ interface DashboardContextValue {
   knowledgeSources: TextbookSource[];
   studentNotes: Record<string, StudentNote[]>;
   studentAttendance: Record<string, AttendanceRecord[]>;
+  isLoading: boolean;
   handleGraded: (result: GradingResult) => void;
   addNote: (studentName: string, text: string) => void;
   deleteNote: (studentName: string, noteId: string) => void;
@@ -92,6 +75,7 @@ interface DashboardContextValue {
     records: { name: string; status: "present" | "absent" }[],
   ) => void;
   getStudentProfiles: () => StudentProfileData[];
+  refreshHistory: () => Promise<void>;
 }
 
 const DashboardContext = createContext<DashboardContextValue | null>(null);
@@ -101,7 +85,8 @@ const DashboardContext = createContext<DashboardContextValue | null>(null);
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [history, setHistory] = useState<GradingResult[]>(MOCK_HISTORY);
+  const [history, setHistory] = useState<GradingResult[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [studentNotes, setStudentNotes] = useState<
     Record<string, StudentNote[]>
   >({});
@@ -110,13 +95,43 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   >({});
   const [knowledgeSources] = useState<TextbookSource[]>(INITIAL_KNOWLEDGE);
 
-  const handleGraded = useCallback((result: GradingResult) => {
+  // Fetch history from API on mount
+  const refreshHistory = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await getAllGradingHistory();
+      if (response.success && response.history) {
+        setHistory(response.history);
+      }
+    } catch (error) {
+      console.error("Failed to fetch grading history:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshHistory();
+  }, [refreshHistory]);
+
+  const handleGraded = useCallback(async (result: GradingResult) => {
+    // Add to local state immediately for responsiveness
     setHistory((prev) => {
       const exists = prev.find(
         (e) => e.studentName === result.studentName && e.date === result.date,
       );
       return exists ? prev : [result, ...prev];
     });
+
+    // Save to database (creates student if needed)
+    try {
+      const response = await saveResultToApi(result);
+      if (!response.success) {
+        console.error("Failed to save result:", response.error);
+      }
+    } catch (error) {
+      console.error("Failed to save grading result:", error);
+    }
   }, []);
 
   const addNote = useCallback((studentName: string, text: string) => {
@@ -193,22 +208,26 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       knowledgeSources,
       studentNotes,
       studentAttendance,
+      isLoading,
       handleGraded,
       addNote,
       deleteNote,
       saveAttendance,
       getStudentProfiles,
+      refreshHistory,
     }),
     [
       history,
       knowledgeSources,
       studentNotes,
       studentAttendance,
+      isLoading,
       handleGraded,
       addNote,
       deleteNote,
       saveAttendance,
       getStudentProfiles,
+      refreshHistory,
     ],
   );
 

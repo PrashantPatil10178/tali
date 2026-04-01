@@ -244,14 +244,29 @@ GRADING STANDARDS:
 3. SHORT ANSWERS: Check key concepts. Partial marks for incomplete but correct concepts.
 4. Give 0 marks for: blank answers, completely wrong answers, conceptual errors.
 
-FEEDBACK STYLE:
-- Write in warm, encouraging Marathi (मराठी)
-- Start with what the student did well
-- Point out specific areas needing improvement
-- Suggest concrete next steps
+FEEDBACK STYLE (VERY IMPORTANT - MAKE IT DETAILED AND COMPREHENSIVE):
+- Write a DETAILED feedback paragraph (minimum 150-200 words) in warm, encouraging Marathi (मराठी)
+- Structure the feedback as follows:
+  1. Start with 2-3 sentences praising what the student did exceptionally well
+  2. Provide specific observations about their problem-solving approach
+  3. Identify 2-3 specific areas needing improvement with clear explanations
+  4. Give concrete, actionable next steps for improvement
+  5. End with an encouraging motivational message
+- The feedback should feel like a caring teacher's personalized assessment
+
+ANALYSIS STYLE (FOR EACH QUESTION):
+- Provide DETAILED analysis for each question (minimum 50-80 words per question)
+- Include:
+  1. What concept the question tests
+  2. How the student approached it
+  3. Where exactly they went wrong (if applicable)
+  4. The correct method/approach explained step-by-step
+  5. Tips for avoiding similar mistakes
+- Make the analysis educational and helpful for understanding
 
 OUTPUT FORMAT: JSON array. One GradingResult per student. Every question must have its own correction entry.
-NEVER skip questions. NEVER combine questions. NEVER guess names - use "Unknown Student" if unclear.`;
+NEVER skip questions. NEVER combine questions. NEVER guess names - use "Unknown Student" if unclear.
+IMPORTANT: Generate COMPREHENSIVE, DETAILED content - avoid short or brief responses.`;
 
   return callWithRetry(async () => {
     const response = await generateContent({
@@ -453,6 +468,103 @@ export async function searchGroundingQuery(
       text: extractResponseText(response),
       sources:
         response.candidates?.[0]?.groundingMetadata?.groundingChunks || [],
+    };
+  });
+}
+
+export async function translateGradingResultToEnglish(
+  result: GradingResult,
+): Promise<GradingResult> {
+  const systemInstruction = `You are a professional translator specializing in educational content.
+Your task is to translate a student grading report from Marathi to English.
+
+RULES:
+1. Translate ALL Marathi text to clear, natural English
+2. Keep the student's name as-is (do not transliterate names)
+3. Translate subject names to English (गणित → Mathematics, मराठी → Marathi Language, परिसर अभ्यास → Environmental Studies, इंग्रजी → English)
+4. Maintain the warm, encouraging tone in translations
+5. Preserve all numbers, scores, and marks exactly as they are
+6. Translate questionText, studentAnswer, correctAnswer, analysis, and feedback fields
+7. Translate weakAreas array items
+8. Keep the same detailed, comprehensive style in English
+9. If any text is already in English, keep it as-is
+
+OUTPUT: Return the complete translated JSON object with the same structure.`;
+
+  const prompt = `Translate this grading result from Marathi to English. Return ONLY valid JSON:
+
+${JSON.stringify(result, null, 2)}`;
+
+  return callWithRetry(async () => {
+    const response = await generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        systemInstruction,
+        temperature: 0.2,
+        maxOutputTokens: 32000,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: SchemaType.OBJECT,
+          properties: {
+            studentName: { type: SchemaType.STRING },
+            subject: { type: SchemaType.STRING },
+            score: { type: SchemaType.NUMBER },
+            totalMarks: { type: SchemaType.NUMBER },
+            feedback: { type: SchemaType.STRING },
+            className: { type: SchemaType.STRING },
+            schoolName: { type: SchemaType.STRING },
+            examType: { type: SchemaType.STRING },
+            rollNumber: { type: SchemaType.STRING },
+            date: { type: SchemaType.STRING },
+            corrections: {
+              type: SchemaType.ARRAY,
+              items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  questionNo: { type: SchemaType.STRING },
+                  questionText: { type: SchemaType.STRING },
+                  studentAnswer: { type: SchemaType.STRING },
+                  correctAnswer: { type: SchemaType.STRING },
+                  marksObtained: { type: SchemaType.NUMBER },
+                  maxMarks: { type: SchemaType.NUMBER },
+                  analysis: { type: SchemaType.STRING },
+                },
+                required: [
+                  "questionNo",
+                  "questionText",
+                  "studentAnswer",
+                  "correctAnswer",
+                  "marksObtained",
+                  "maxMarks",
+                  "analysis",
+                ],
+              },
+            },
+            weakAreas: {
+              type: SchemaType.ARRAY,
+              items: { type: SchemaType.STRING },
+            },
+          },
+          required: [
+            "studentName",
+            "subject",
+            "score",
+            "totalMarks",
+            "feedback",
+            "corrections",
+            "weakAreas",
+          ],
+        },
+      },
+    });
+
+    const translated = JSON.parse(cleanJsonText(extractResponseText(response)));
+    return {
+      ...result,
+      ...translated,
+      date: result.date,
+      learningPlan: result.learningPlan,
     };
   });
 }

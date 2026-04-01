@@ -1,49 +1,16 @@
 import React, { useState } from "react";
 import { TextbookSource } from "@tali/types";
 import { useLanguage } from "@/lib/LanguageContext";
-
-const INITIAL_KNOWLEDGE: TextbookSource[] = [
-  {
-    id: "1",
-    name: "Std 1 and 2",
-    grade: "१ ली व २ री",
-    uploadDate: "२०२४-०१-०१",
-    isSystem: true,
-  },
-  {
-    id: "2",
-    name: "Std 3",
-    grade: "३ री",
-    uploadDate: "२०२४-०१-०१",
-    isSystem: true,
-  },
-  {
-    id: "3",
-    name: "Std 4",
-    grade: "४ थी",
-    uploadDate: "२०२४-०१-०१",
-    isSystem: true,
-  },
-  {
-    id: "4",
-    name: "Std 5 and 6",
-    grade: "५ वी व ६ वी",
-    uploadDate: "२०२४-०१-०१",
-    isSystem: true,
-  },
-  {
-    id: "5",
-    name: "Std 7 and 8",
-    grade: "७ वी व ८ वी",
-    uploadDate: "२०२४-०१-०१",
-    isSystem: true,
-  },
-];
+import { useDashboard } from "@/app/dashboard/DashboardContext";
 
 const KnowledgeBase: React.FC = () => {
   const { t } = useLanguage();
-  const [sources, setSources] = useState<TextbookSource[]>(INITIAL_KNOWLEDGE);
+  const { knowledgeSources } = useDashboard();
+  const [customSources, setCustomSources] = useState<TextbookSource[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Combine system sources from context with user-uploaded sources
+  const sources = [...customSources, ...knowledgeSources];
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,7 +25,7 @@ const KnowledgeBase: React.FC = () => {
           uploadDate: new Date().toISOString().split("T")[0],
           isSystem: false,
         };
-        setSources((prev) => [newSource, ...prev]);
+        setCustomSources((prev) => [newSource, ...prev]);
         setIsUploading(false);
       }, 2000);
     }

@@ -5,13 +5,15 @@ import {
   complexEducationalQuery,
   generateLearningPlan,
   searchGroundingQuery,
+  translateGradingResultToEnglish,
 } from "@/modules/gemini/service";
 
 type GeminiAction =
   | "analyzeAnswerSheet"
   | "generateLearningPlan"
   | "complexEducationalQuery"
-  | "searchGroundingQuery";
+  | "searchGroundingQuery"
+  | "translateToEnglish";
 
 export const geminiRoutes = new Elysia({ prefix: "/api/gemini" }).post(
   "/",
@@ -36,6 +38,10 @@ export const geminiRoutes = new Elysia({ prefix: "/api/gemini" }).post(
           );
         case "searchGroundingQuery":
           return await searchGroundingQuery(String(payload.query || ""));
+        case "translateToEnglish":
+          return await translateGradingResultToEnglish(
+            payload.result as GradingResult,
+          );
         default:
           set.status = 400;
           return { error: "Unsupported action" };

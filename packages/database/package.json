@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@prisma/adapter-better-sqlite3": "^7.4.2",
+    "@prisma/adapter-libsql": "^7.6.0",
     "@prisma/client": "^7.4.2",
     "@prisma/client-runtime-utils": "^7.4.2"
   },

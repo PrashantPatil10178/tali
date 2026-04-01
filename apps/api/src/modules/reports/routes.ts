@@ -1,6 +1,16 @@
 import { Elysia, t } from "elysia";
 import PDFDocument from "pdfkit";
 import { GradingResult } from "@tali/types";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Font paths for Marathi/Devanagari support
+const FONTS_DIR = path.resolve(__dirname, "../fonts");
+const NOTO_REGULAR = path.join(FONTS_DIR, "NotoSansDevanagari-Regular.ttf");
+const NOTO_BOLD = path.join(FONTS_DIR, "NotoSansDevanagari-Bold.ttf");
 
 // ── helpers ───────────────────────────────────────────────────────────────
 
@@ -28,6 +38,21 @@ const buildPdf = (
     doc.on("data", (chunk: Buffer) => chunks.push(chunk));
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
+
+    // Register fonts for Marathi/Devanagari support
+    const isMarathi = locale === "mr";
+    if (isMarathi) {
+      doc.registerFont("NotoSans", NOTO_REGULAR);
+      doc.registerFont("NotoSans-Bold", NOTO_BOLD);
+    }
+
+    // Helper to get appropriate font
+    const getFont = (bold: boolean): string => {
+      if (isMarathi) {
+        return bold ? "NotoSans-Bold" : "NotoSans";
+      }
+      return bold ? "Helvetica-Bold" : "Helvetica";
+    };
 
     const L =
       locale === "mr"
@@ -79,19 +104,19 @@ const buildPdf = (
     doc
       .fillColor("#FFFFFF")
       .fontSize(22)
-      .font("Helvetica-Bold")
+      .font(getFont(true))
       .text("TALI", 48, 24);
 
     doc
       .fillColor("rgba(255,255,255,0.7)")
       .fontSize(9)
-      .font("Helvetica")
+      .font(getFont(false))
       .text("Smart Answer Grading Platform", 48, 50);
 
     doc
       .fillColor("#FFFFFF")
       .fontSize(11)
-      .font("Helvetica-Bold")
+      .font(getFont(true))
       .text(L.reportTitle, doc.page.width - 220, 30, {
         width: 180,
         align: "right",
@@ -100,7 +125,7 @@ const buildPdf = (
     doc
       .fillColor("rgba(255,255,255,0.7)")
       .fontSize(9)
-      .font("Helvetica")
+      .font(getFont(false))
       .text(formattedDate, doc.page.width - 220, 50, {
         width: 180,
         align: "right",
@@ -112,14 +137,14 @@ const buildPdf = (
     doc
       .fillColor(DARK)
       .fontSize(20)
-      .font("Helvetica-Bold")
+      .font(getFont(true))
       .text(result.studentName, 48, y);
 
     y += 28;
     doc
       .fillColor(MID)
       .fontSize(11)
-      .font("Helvetica")
+      .font(getFont(false))
       .text(`${L.subject}: ${result.subject}`, 48, y);
 
     // ── SCORE BAND ────────────────────────────────────────────────────────
@@ -131,25 +156,25 @@ const buildPdf = (
     doc
       .fillColor(scoreColor)
       .fontSize(32)
-      .font("Helvetica-Bold")
+      .font(getFont(true))
       .text(`${score}%`, 60, y + 12);
 
     doc
       .fillColor(DARK)
       .fontSize(12)
-      .font("Helvetica-Bold")
+      .font(getFont(true))
       .text(grade, 60, y + 48);
 
     doc
       .fillColor(MID)
       .fontSize(10)
-      .font("Helvetica")
+      .font(getFont(false))
       .text(`Marks: ${result.score} / ${result.totalMarks}`, 180, y + 20);
 
     doc
       .fillColor(MID)
       .fontSize(10)
-      .font("Helvetica")
+      .font(getFont(false))
       .text(`Questions: ${result.corrections.length}`, 180, y + 38);
 
     // score bar
@@ -166,6 +191,7 @@ const buildPdf = (
     doc
       .fillColor(MID)
       .fontSize(8)
+      .font(getFont(false))
       .text("0%", barX, y + 44)
       .text("100%", barX + barW - 18, y + 44);
 
@@ -175,7 +201,7 @@ const buildPdf = (
     doc
       .fillColor(DARK)
       .fontSize(13)
-      .font("Helvetica-Bold")
+      .font(getFont(true))
       .text(L.aiFeedback, 48, y);
 
     doc
@@ -186,6 +212,7 @@ const buildPdf = (
       .stroke();
 
     y += 26;
+    doc.font(getFont(false));
     const feedbackHeight = doc.heightOfString(result.feedback, {
       width: W - 16,
     });
@@ -196,7 +223,7 @@ const buildPdf = (
     doc
       .fillColor("#92400E")
       .fontSize(10)
-      .font("Helvetica")
+      .font(getFont(false))
       .text(result.feedback, 56, y + 10, { width: W - 16 });
 
     y += feedbackHeight + 32;
@@ -206,7 +233,7 @@ const buildPdf = (
       doc
         .fillColor(DARK)
         .fontSize(13)
-        .font("Helvetica-Bold")
+        .font(getFont(true))
         .text(L.weakAreas, 48, y);
 
       doc
@@ -224,7 +251,7 @@ const buildPdf = (
         doc
           .fillColor(DARK)
           .fontSize(10)
-          .font("Helvetica")
+          .font(getFont(false))
           .text(area, 62, y, { width: 120 });
         doc.rect(200, y, bw, 8).fill("#FEE2E2").stroke("#FEE2E2");
         doc
@@ -234,7 +261,7 @@ const buildPdf = (
         doc
           .fillColor(RED)
           .fontSize(8)
-          .font("Helvetica-Bold")
+          .font(getFont(true))
           .text(`${p2}%`, 200 + bw + 6, y);
         y += 20;
       });
@@ -253,7 +280,7 @@ const buildPdf = (
       doc
         .fillColor(DARK)
         .fontSize(13)
-        .font("Helvetica-Bold")
+        .font(getFont(true))
         .text(L.corrections, 48, y);
 
       doc
@@ -271,7 +298,7 @@ const buildPdf = (
       doc
         .fillColor("#FFFFFF")
         .fontSize(8)
-        .font("Helvetica-Bold")
+        .font(getFont(true))
         .text(L.qNo, cols.q + 4, y + 5)
         .text(L.marks, cols.marks + 4, y + 5)
         .text(L.answer, cols.answer + 4, y + 5)
@@ -282,6 +309,7 @@ const buildPdf = (
       result.corrections.forEach((c, idx) => {
         const isGood = c.marksObtained >= c.maxMarks * 0.6;
         const rowColor = idx % 2 === 0 ? "#FFFFFF" : "#F8FAFC";
+        doc.font(getFont(false));
         const rowH = Math.max(
           28,
           doc.heightOfString(c.studentAnswer.substring(0, 60), {
@@ -301,7 +329,7 @@ const buildPdf = (
           doc
             .fillColor("#FFFFFF")
             .fontSize(8)
-            .font("Helvetica-Bold")
+            .font(getFont(true))
             .text(L.qNo, cols.q + 4, y + 5)
             .text(L.marks, cols.marks + 4, y + 5)
             .text(L.answer, cols.answer + 4, y + 5)
@@ -319,19 +347,19 @@ const buildPdf = (
         doc
           .fillColor(DARK)
           .fontSize(9)
-          .font("Helvetica-Bold")
+          .font(getFont(true))
           .text(`Q${c.questionNo}`, cols.q + 4, y + 8);
 
         doc
           .fillColor(isGood ? GREEN : RED)
           .fontSize(9)
-          .font("Helvetica-Bold")
+          .font(getFont(true))
           .text(`${c.marksObtained}/${c.maxMarks}`, cols.marks + 4, y + 8);
 
         doc
           .fillColor(DARK)
           .fontSize(8)
-          .font("Helvetica")
+          .font(getFont(false))
           .text(c.studentAnswer.substring(0, 120), cols.answer + 4, y + 6, {
             width: 165,
           });
@@ -339,7 +367,7 @@ const buildPdf = (
         doc
           .fillColor(MID)
           .fontSize(8)
-          .font("Helvetica")
+          .font(getFont(false))
           .text(c.analysis.substring(0, 160), cols.analysis + 4, y + 6, {
             width: W - 298,
           });
@@ -360,7 +388,7 @@ const buildPdf = (
     doc
       .fillColor(MID)
       .fontSize(8)
-      .font("Helvetica")
+      .font(getFont(false))
       .text(`${L.footer}  ·  ${formattedDate}`, 48, footerY + 8, {
         width: W,
         align: "center",
@@ -395,6 +423,21 @@ const buildBulkPdf = (
     const W = doc.page.width - 96;
 
     const isMarathi = locale === "mr";
+
+    // Register fonts for Marathi/Devanagari support
+    if (isMarathi) {
+      doc.registerFont("NotoSans", NOTO_REGULAR);
+      doc.registerFont("NotoSans-Bold", NOTO_BOLD);
+    }
+
+    // Helper to get appropriate font
+    const getFont = (bold: boolean): string => {
+      if (isMarathi) {
+        return bold ? "NotoSans-Bold" : "NotoSans";
+      }
+      return bold ? "Helvetica-Bold" : "Helvetica";
+    };
+
     const title = isMarathi
       ? "सामूहिक विद्यार्थी अहवाल"
       : "Bulk Student Report";
@@ -407,17 +450,17 @@ const buildBulkPdf = (
     doc
       .fillColor("#FFFFFF")
       .fontSize(28)
-      .font("Helvetica-Bold")
+      .font(getFont(true))
       .text("TALI", 48, 48);
     doc
       .fillColor("rgba(255,255,255,0.7)")
       .fontSize(11)
-      .font("Helvetica")
+      .font(getFont(false))
       .text("Smart Answer Grading Platform", 48, 82);
     doc
       .fillColor("#FFFFFF")
       .fontSize(18)
-      .font("Helvetica-Bold")
+      .font(getFont(true))
       .text(title, 48, 120);
 
     const formattedDate = new Intl.DateTimeFormat("en-IN", {
@@ -428,7 +471,7 @@ const buildBulkPdf = (
     doc
       .fillColor("rgba(255,255,255,0.75)")
       .fontSize(10)
-      .font("Helvetica")
+      .font(getFont(false))
       .text(formattedDate, 48, 148);
 
     // summary stats
@@ -468,12 +511,12 @@ const buildBulkPdf = (
       doc
         .fillColor(INDIGO)
         .fontSize(22)
-        .font("Helvetica-Bold")
+        .font(getFont(true))
         .text(value, x + 10, y + 10);
       doc
         .fillColor(MID)
         .fontSize(9)
-        .font("Helvetica")
+        .font(getFont(false))
         .text(label, x + 10, y + 40);
     });
 
@@ -481,7 +524,7 @@ const buildBulkPdf = (
     doc
       .fillColor(DARK)
       .fontSize(13)
-      .font("Helvetica-Bold")
+      .font(getFont(true))
       .text(isMarathi ? "विद्यार्थी सारांश" : "Student Summary", 48, y);
     doc
       .moveTo(48, y + 18)
@@ -496,7 +539,7 @@ const buildBulkPdf = (
     doc
       .fillColor("#FFF")
       .fontSize(8)
-      .font("Helvetica-Bold")
+      .font(getFont(true))
       .text("#", 52, y + 5)
       .text(isMarathi ? "नाव" : "Name", 72, y + 5)
       .text(isMarathi ? "विषय" : "Subject", 240, y + 5)
@@ -522,7 +565,7 @@ const buildBulkPdf = (
       doc
         .fillColor(DARK)
         .fontSize(8)
-        .font("Helvetica")
+        .font(getFont(false))
         .text(String(i + 1), 52, y + 7)
         .text(r.studentName.substring(0, 28), 72, y + 7)
         .text(r.subject.substring(0, 18), 240, y + 7)
@@ -530,12 +573,12 @@ const buildBulkPdf = (
       doc
         .fillColor(p2 >= 70 ? GREEN : p2 >= 50 ? AMBER : RED)
         .fontSize(8)
-        .font("Helvetica-Bold")
+        .font(getFont(true))
         .text(`${p2}%`, 400, y + 7);
       doc
         .fillColor(p2 >= 40 ? GREEN : RED)
         .fontSize(8)
-        .font("Helvetica-Bold")
+        .font(getFont(true))
         .text(
           p2 >= 40
             ? isMarathi
@@ -561,12 +604,12 @@ const buildBulkPdf = (
       doc
         .fillColor("#FFF")
         .fontSize(14)
-        .font("Helvetica-Bold")
+        .font(getFont(true))
         .text(r.studentName, 48, 18);
       doc
         .fillColor("rgba(255,255,255,0.7)")
         .fontSize(9)
-        .font("Helvetica")
+        .font(getFont(false))
         .text(
           `${isMarathi ? "विषय" : "Subject"}: ${r.subject}  ·  ${idx + 1} / ${total}`,
           48,
@@ -579,17 +622,17 @@ const buildBulkPdf = (
       doc
         .fillColor(scoreColor)
         .fontSize(28)
-        .font("Helvetica-Bold")
+        .font(getFont(true))
         .text(`${p2}%`, 60, ry + 10);
       doc
         .fillColor(DARK)
         .fontSize(10)
-        .font("Helvetica-Bold")
+        .font(getFont(true))
         .text(scoreGrade(p2), 60, ry + 40);
       doc
         .fillColor(MID)
         .fontSize(10)
-        .font("Helvetica")
+        .font(getFont(false))
         .text(
           `${isMarathi ? "गुण" : "Marks"}: ${r.score} / ${r.totalMarks}`,
           160,
@@ -601,9 +644,10 @@ const buildBulkPdf = (
       doc
         .fillColor(DARK)
         .fontSize(11)
-        .font("Helvetica-Bold")
+        .font(getFont(true))
         .text(isMarathi ? "AI अभिप्राय" : "AI Feedback", 48, ry);
       ry += 18;
+      doc.font(getFont(false));
       const fbH = Math.min(
         doc.heightOfString(r.feedback, { width: W - 16 }),
         120,
@@ -615,7 +659,7 @@ const buildBulkPdf = (
       doc
         .fillColor("#92400E")
         .fontSize(9)
-        .font("Helvetica")
+        .font(getFont(false))
         .text(r.feedback, 56, ry + 8, { width: W - 16, height: fbH });
       ry += fbH + 28;
 
@@ -624,7 +668,7 @@ const buildBulkPdf = (
         doc
           .fillColor(DARK)
           .fontSize(11)
-          .font("Helvetica-Bold")
+          .font(getFont(true))
           .text(isMarathi ? "कमकुवत क्षेत्रे" : "Weak Areas", 48, ry);
         ry += 18;
         r.weakAreas.slice(0, 5).forEach((area) => {
@@ -633,7 +677,7 @@ const buildBulkPdf = (
             ry = 48;
           }
           doc.circle(54, ry + 5, 3).fill(RED);
-          doc.fillColor(DARK).fontSize(9).font("Helvetica").text(area, 62, ry);
+          doc.fillColor(DARK).fontSize(9).font(getFont(false)).text(area, 62, ry);
           ry += 18;
         });
         ry += 8;
@@ -650,7 +694,7 @@ const buildBulkPdf = (
       doc
         .fillColor(MID)
         .fontSize(8)
-        .font("Helvetica")
+        .font(getFont(false))
         .text(`${footer}  ·  ${formattedDate}`, 48, footerY + 8, {
           width: W,
           align: "center",

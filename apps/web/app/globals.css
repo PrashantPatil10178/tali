@@ -1004,8 +1004,11 @@ a {
 .auth-mobile-hero-bg {
   position: absolute;
   inset: 0;
-  background-image:
-    radial-gradient(circle at 20% 30%, rgb(139 92 246 / 0.4) 0%, transparent 50%);
+  background-image: radial-gradient(
+    circle at 20% 30%,
+    rgb(139 92 246 / 0.4) 0%,
+    transparent 50%
+  );
 }
 
 .auth-mobile-hero-content {
@@ -1120,7 +1123,8 @@ a {
   gap: 0.4rem;
   padding: 0.5rem 0.75rem;
   border-radius: 0.625rem;
-  border: 1px solid color-mix(in oklab, var(--color-muted-light) 70%, transparent);
+  border: 1px solid
+    color-mix(in oklab, var(--color-muted-light) 70%, transparent);
   background: color-mix(in oklab, var(--color-surface-light) 90%, transparent);
   font-size: 0.75rem;
   font-weight: 600;
@@ -1130,7 +1134,11 @@ a {
 }
 
 .auth-language-toggle:hover {
-  border-color: color-mix(in oklab, var(--color-primary) 30%, var(--color-muted-light));
+  border-color: color-mix(
+    in oklab,
+    var(--color-primary) 30%,
+    var(--color-muted-light)
+  );
   box-shadow: 0 2px 8px rgb(79 70 229 / 0.08);
 }
 
@@ -1242,7 +1250,8 @@ a {
 .auth-form-card {
   padding: 1.5rem;
   border-radius: 1.25rem;
-  border: 1px solid color-mix(in oklab, var(--color-muted-light) 60%, transparent);
+  border: 1px solid
+    color-mix(in oklab, var(--color-muted-light) 60%, transparent);
   background: var(--color-surface-light);
   box-shadow:
     0 1px 2px rgb(0 0 0 / 0.04),
@@ -1320,7 +1329,8 @@ a {
   width: 100%;
   height: 3rem;
   border-radius: 0.75rem;
-  border: 1px solid color-mix(in oklab, var(--color-muted-light) 75%, transparent);
+  border: 1px solid
+    color-mix(in oklab, var(--color-muted-light) 75%, transparent);
   background: color-mix(in oklab, var(--color-surface-light) 98%, transparent);
   padding: 0 0.875rem;
   font-size: 0.9rem;
@@ -1376,7 +1386,8 @@ a {
   justify-content: center;
   gap: 0.625rem;
   border-radius: 0.75rem;
-  border: 1px solid color-mix(in oklab, var(--color-muted-light) 70%, transparent);
+  border: 1px solid
+    color-mix(in oklab, var(--color-muted-light) 70%, transparent);
   background: var(--color-surface-light);
   color: color-mix(in oklab, var(--color-text-light) 85%, white 15%);
   font-size: 0.85rem;
@@ -1387,7 +1398,11 @@ a {
 }
 
 .auth-social-button:hover {
-  border-color: color-mix(in oklab, var(--color-primary) 25%, var(--color-muted-light));
+  border-color: color-mix(
+    in oklab,
+    var(--color-primary) 25%,
+    var(--color-muted-light)
+  );
   box-shadow: 0 2px 8px rgb(79 70 229 / 0.06);
 }
 
@@ -1408,7 +1423,8 @@ a {
   top: 50%;
   left: 0;
   width: 100%;
-  border-top: 1px solid color-mix(in oklab, var(--color-muted-light) 70%, transparent);
+  border-top: 1px solid
+    color-mix(in oklab, var(--color-muted-light) 70%, transparent);
   content: "";
 }
 

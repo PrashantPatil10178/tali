@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { GradingResult } from "@tali/types";
 import Scanner from "@/components/Scanner";
 import { useLanguage } from "@/lib/LanguageContext";
+import { translateToEnglish } from "@tali/gemini/client";
 
 interface ReportsProps {
   history: GradingResult[];
@@ -71,26 +72,27 @@ const si = (delay = 0) => ({
   },
 });
 
-const BAR_MONTHS = [
-  { month: "Jan", you: 40, avg: 30 },
-  { month: "Feb", you: 55, avg: 35 },
-  { month: "Mar", you: 70, avg: 45 },
-  { month: "Apr", you: 65, avg: 50 },
-  { month: "May", you: 85, avg: 55 },
-  { month: "Jun", you: 90, avg: 60 },
-];
-
 // ── Download helpers ───────────────────────────────────────────────────────
 
 async function downloadReportPdf(
   result: GradingResult,
   locale: "en" | "mr" = "en",
 ): Promise<void> {
+  // If English is selected, translate the content first
+  let resultToExport = result;
+  if (locale === "en") {
+    try {
+      resultToExport = await translateToEnglish(result);
+    } catch (error) {
+      console.error("Translation failed, using original content:", error);
+    }
+  }
+
   const res = await fetch(`${API_BASE}/api/reports/pdf`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ result, locale }),
+    body: JSON.stringify({ result: resultToExport, locale }),
   });
   if (!res.ok) throw new Error(await res.text().catch(() => "Unknown error"));
   const blob = await res.blob();
@@ -108,11 +110,23 @@ async function downloadBulkReportPdf(
   results: GradingResult[],
   locale: "en" | "mr" = "en",
 ): Promise<void> {
+  // If English is selected, translate all results first
+  let resultsToExport = results;
+  if (locale === "en") {
+    try {
+      resultsToExport = await Promise.all(
+        results.map((r) => translateToEnglish(r).catch(() => r)),
+      );
+    } catch (error) {
+      console.error("Translation failed, using original content:", error);
+    }
+  }
+
   const res = await fetch(`${API_BASE}/api/reports/bulk-pdf`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ results, locale }),
+    body: JSON.stringify({ results: resultsToExport, locale }),
   });
   if (!res.ok) throw new Error(await res.text().catch(() => "Unknown error"));
   const blob = await res.blob();
@@ -1029,7 +1043,7 @@ const DetailView: React.FC<DetailViewProps> = ({ result, onBack }) => {
         </motion.div>
       </div>
 
-      {/* bar chart */}
+      {/* bar chart - Performance breakdown by question */}
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{
@@ -1048,48 +1062,37 @@ const DetailView: React.FC<DetailViewProps> = ({ result, onBack }) => {
               {t("reports.detail.trendSub")}
             </p>
           </div>
-          <div className="flex items-center gap-4 text-xs font-semibold">
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block size-3 rounded-full bg-indigo-600" />
-              {t("reports.detail.you")}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block size-3 rounded-full bg-slate-300 dark:bg-slate-600" />
-              {t("reports.detail.classAvg")}
-            </span>
-          </div>
         </div>
         <div className="flex h-44 items-end gap-2 overflow-hidden rounded-xl bg-slate-50 px-4 pb-4 dark:bg-slate-800/50">
-          {BAR_MONTHS.map(({ month, you, avg }, i) => (
-            <div
-              key={month}
-              className="flex flex-1 flex-col items-center justify-end gap-1"
-            >
-              <motion.div
-                className="w-full rounded-t-sm bg-indigo-500/70"
-                initial={{ height: 0 }}
-                animate={{ height: `${you}%` }}
-                transition={{
-                  duration: 0.65,
-                  delay: 0.1 + i * 0.08,
-                  ease: "easeOut",
-                }}
-              />
-              <motion.div
-                className="w-full rounded-t-sm bg-slate-200 dark:bg-slate-700"
-                initial={{ height: 0 }}
-                animate={{ height: `${avg}%` }}
-                transition={{
-                  duration: 0.65,
-                  delay: 0.15 + i * 0.08,
-                  ease: "easeOut",
-                }}
-              />
-              <span className="mt-1 text-[10px] font-bold text-slate-400">
-                {month}
-              </span>
+          {corrections.length > 0 ? (
+            corrections.slice(0, 8).map((c, i) => {
+              const pctScore = c.maxMarks > 0 ? Math.round((c.marksObtained / c.maxMarks) * 100) : 0;
+              return (
+                <div
+                  key={c.questionNo || i}
+                  className="flex flex-1 flex-col items-center justify-end gap-1"
+                >
+                  <motion.div
+                    className={`w-full rounded-t-sm ${pctScore >= 70 ? 'bg-emerald-500/70' : pctScore >= 50 ? 'bg-amber-400/70' : 'bg-red-500/70'}`}
+                    initial={{ height: 0 }}
+                    animate={{ height: `${Math.max(pctScore, 10)}%` }}
+                    transition={{
+                      duration: 0.65,
+                      delay: 0.1 + i * 0.08,
+                      ease: "easeOut",
+                    }}
+                  />
+                  <span className="mt-1 text-[10px] font-bold text-slate-400">
+                    Q{c.questionNo || i + 1}
+                  </span>
+                </div>
+              );
+            })
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
+              {t("reports.detail.noQuestionData")}
             </div>
-          ))}
+          )}
         </div>
       </motion.div>
 

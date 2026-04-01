@@ -4,40 +4,8 @@ import { useLanguage } from "@/lib/LanguageContext";
 
 interface DashboardProps {
   readonly history: GradingResult[];
+  readonly isLoading?: boolean;
 }
-
-const FALLBACK_SUBJECTS = [
-  { subject: "Math", average: 72 },
-  { subject: "Sci", average: 84 },
-  { subject: "Eng", average: 78 },
-  { subject: "Mar", average: 91 },
-  { subject: "Hist", average: 88 },
-] as const;
-
-const FALLBACK_ATTENTION_KEYS = [
-  {
-    name: "Arjun Sharma",
-    detailKey: "dashboard.fallback.attention1",
-    severityKey: "dashboard.fallback.severity.critical",
-    tone: "critical",
-  },
-  {
-    name: "Priya Patil",
-    detailKey: "dashboard.fallback.attention2",
-    severityKey: "dashboard.fallback.severity.review",
-    tone: "review",
-  },
-  {
-    name: "Rohan Deshmukh",
-    detailKey: "dashboard.fallback.attention3",
-    severityKey: "dashboard.fallback.severity.review",
-    tone: "review",
-  },
-] as const;
-
-const WEEKLY_ACTIVITY = [18, 36, 58, 46, 74] as const;
-const WEEKLY_DAYS = ["M", "T", "W", "T", "F"] as const;
-const WEEKLY_MAX = Math.max(...WEEKLY_ACTIVITY);
 
 const SCORE_BUCKETS = [
   { label: "0-20", min: 0, max: 20, tone: "danger" },
@@ -94,7 +62,7 @@ export default function Dashboard({
           normalizedScores.reduce((sum, value) => sum + value, 0) /
             normalizedScores.length,
         )
-      : 78;
+      : 0;
 
     const highPerformers = normalizedScores.filter(
       (score) => score >= 81,
@@ -115,15 +83,7 @@ export default function Dashboard({
         height:
           normalizedScores.length > 0
             ? Math.max(16, Math.round((count / normalizedScores.length) * 100))
-            : bucket.label === "61-80"
-              ? 90
-              : bucket.label === "41-60"
-                ? 65
-                : bucket.label === "81-100"
-                  ? 50
-                  : bucket.label === "21-40"
-                    ? 35
-                    : 15,
+            : 16,
       };
     });
 
@@ -144,8 +104,7 @@ export default function Dashboard({
       }))
       .slice(0, 5);
 
-    const subjectComparison =
-      derivedSubjects.length > 0 ? derivedSubjects : [...FALLBACK_SUBJECTS];
+    const subjectComparison = derivedSubjects;
 
     const attentionItems = history
       .slice()
@@ -169,6 +128,22 @@ export default function Dashboard({
         };
       });
 
+    // Compute weekly activity from history (last 5 days)
+    const weekDays = ["M", "T", "W", "T", "F"] as const;
+    const now = new Date();
+    const weekActivity = weekDays.map((_, idx) => {
+      const dayOffset = 4 - idx; // Going back from today
+      const targetDate = new Date(now);
+      targetDate.setDate(now.getDate() - dayOffset);
+      const targetDateStr = targetDate.toISOString().split("T")[0];
+      
+      return history.filter((r) => {
+        const resultDate = new Date(r.date).toISOString().split("T")[0];
+        return resultDate === targetDateStr;
+      }).length;
+    });
+    const weekMax = Math.max(...weekActivity, 1);
+
     return {
       averageScore,
       highPerformers,
@@ -177,18 +152,13 @@ export default function Dashboard({
       totalAssessed: history.length,
       scoreDistribution,
       subjectComparison,
-      attentionItems:
-        attentionItems.length > 0
-          ? attentionItems
-          : FALLBACK_ATTENTION_KEYS.map((item) => ({
-              name: item.name,
-              detail: t(item.detailKey),
-              severity: t(item.severityKey),
-              tone: item.tone,
-            })),
+      attentionItems,
       subjectCurve: buildSubjectCurve(
         subjectComparison.map((subject) => subject.average),
       ),
+      weekActivity,
+      weekMax,
+      weekDays,
     };
   }, [history, t]);
 
@@ -314,9 +284,9 @@ export default function Dashboard({
           </div>
 
           <div className="mt-4 flex h-32 items-end gap-1.5">
-            {WEEKLY_ACTIVITY.map((value, index) => {
+            {computed.weekActivity.map((value, index) => {
               const normalizedHeight =
-                Math.round((value / WEEKLY_MAX) * 90) + 5;
+                Math.round((value / computed.weekMax) * 90) + 5;
               return (
                 <div
                   className="flex flex-1 flex-col items-center gap-1.5"
@@ -327,7 +297,7 @@ export default function Dashboard({
                     style={{ height: `${normalizedHeight}%` }}
                   />
                   <span className="text-[9px] font-bold uppercase tracking-wide text-white/50">
-                    {WEEKLY_DAYS[index]}
+                    {computed.weekDays[index]}
                   </span>
                 </div>
               );
