@@ -5,10 +5,10 @@ import { geminiRoutes } from "@/modules/gemini/routes";
 import { reportsRoutes } from "@/modules/reports/routes";
 import { studentsRoutes } from "@/modules/students/routes";
 
-const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:3000")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+const allowedOrigins = [
+  "https://tali-frontend.prashantpatil.dev",
+  "http://localhost:3000",
+];
 
 const betterAuthPlugin = new Elysia({ name: "better-auth" })
   .mount(auth.handler)
@@ -30,7 +30,6 @@ const betterAuthPlugin = new Elysia({ name: "better-auth" })
   });
 
 export const app = new Elysia()
-  .use(betterAuthPlugin)
   .use(
     cors({
       origin: allowedOrigins,
@@ -39,6 +38,7 @@ export const app = new Elysia()
       allowedHeaders: ["Content-Type", "Authorization"],
     }),
   )
+  .use(betterAuthPlugin)
   .use(geminiRoutes)
   .use(reportsRoutes)
   .use(studentsRoutes)

@@ -36,10 +36,6 @@ const copy = {
     submitBusy: "Signing In...",
     footerText: "Don't have an account?",
     footerLinkLabel: "Sign up for free",
-    googleNotConfigured:
-      "Google sign-in is not configured yet. Add the Google auth env vars to enable it.",
-    googlePending:
-      "Google sign-in is enabled by configuration, but the provider callback flow still needs credentials in the backend environment.",
     defaultError: "Unable to sign in right now.",
   },
   mr: {
@@ -67,10 +63,6 @@ const copy = {
     submitBusy: "साइन इन करत आहोत...",
     footerText: "अजून खाते नाही?",
     footerLinkLabel: "मोफत साइन अप करा",
-    googleNotConfigured:
-      "Google sign-in अजून configure केलेले नाही. Auth env vars जोडा.",
-    googlePending:
-      "Configuration उपलब्ध आहे, पण backend मध्ये provider credentials अजून जोडायचे आहेत.",
     defaultError: "आत्ता साइन इन करता आले नाही.",
   },
 } as const;
@@ -105,7 +97,6 @@ export default function SignInPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [socialMessage, setSocialMessage] = useState<string | null>(null);
   const t = copy[locale];
 
   useEffect(() => {
@@ -137,14 +128,9 @@ export default function SignInPage() {
   };
 
   const handleGoogleSignIn = async () => {
-    setSocialMessage(null);
-
     if (!isGoogleAuthEnabled) {
-      setSocialMessage(t.googleNotConfigured);
       return;
     }
-
-    setSocialMessage(t.googlePending);
   };
 
   if (isPending && !session) {
@@ -234,7 +220,6 @@ export default function SignInPage() {
           </label>
 
           {errorMessage ? <p className="auth-error">{errorMessage}</p> : null}
-          {socialMessage ? <p className="auth-note">{socialMessage}</p> : null}
 
           <button
             className="auth-primary-button"

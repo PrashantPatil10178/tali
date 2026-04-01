@@ -1,14 +1,12 @@
 import { Database } from "bun:sqlite";
 import { betterAuth } from "better-auth";
 
-const trustedOrigins = (
-  process.env.BETTER_AUTH_TRUSTED_ORIGINS ||
-  process.env.CORS_ORIGIN ||
-  "http://localhost:3000"
-)
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+const trustedOrigins = [
+  "https://tali-frontend.prashantpatil.dev",
+  "http://localhost:3000",
+];
+
+const authBaseUrl = "https://tali-backend.prashantpatil.dev";
 
 const databasePath = (process.env.DATABASE_URL || "file:./dev.db").replace(
   /^file:/,
@@ -31,7 +29,7 @@ const socialProviders =
 
 export const auth = betterAuth({
   appName: "TALI",
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3001",
+  baseURL: authBaseUrl,
   basePath: "/api/auth",
   database,
   emailAndPassword: {
