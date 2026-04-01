@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Font paths for Marathi/Devanagari support
-const FONTS_DIR = path.resolve(__dirname, "../fonts");
+const FONTS_DIR = path.resolve(__dirname, "../../fonts");
 const NOTO_REGULAR = path.join(FONTS_DIR, "NotoSansDevanagari-Regular.ttf");
 const NOTO_BOLD = path.join(FONTS_DIR, "NotoSansDevanagari-Bold.ttf");
 
@@ -41,17 +41,36 @@ const buildPdf = (
 
     // Register fonts for Marathi/Devanagari support
     const isMarathi = locale === "mr";
+    let fontsRegistered = false;
     if (isMarathi) {
-      doc.registerFont("NotoSans", NOTO_REGULAR);
-      doc.registerFont("NotoSans-Bold", NOTO_BOLD);
+      try {
+        doc.registerFont("NotoSans", NOTO_REGULAR);
+        doc.registerFont("NotoSans-Bold", NOTO_BOLD);
+        fontsRegistered = true;
+      } catch (fontError) {
+        console.error("Failed to register Devanagari fonts:", fontError);
+        // Fall back to Helvetica if font registration fails
+      }
     }
 
     // Helper to get appropriate font
     const getFont = (bold: boolean): string => {
-      if (isMarathi) {
+      if (isMarathi && fontsRegistered) {
         return bold ? "NotoSans-Bold" : "NotoSans";
       }
       return bold ? "Helvetica-Bold" : "Helvetica";
+    };
+
+    // Safe heightOfString wrapper that handles font issues
+    const safeHeightOfString = (text: string, options: { width: number }): number => {
+      try {
+        return doc.heightOfString(text, options);
+      } catch (e) {
+        // Fallback: estimate based on character count and font size
+        const avgCharsPerLine = Math.floor(options.width / 6);
+        const lines = Math.ceil(text.length / avgCharsPerLine);
+        return lines * 14; // ~14 pixels per line at default size
+      }
     };
 
     const L =
@@ -213,7 +232,7 @@ const buildPdf = (
 
     y += 26;
     doc.font(getFont(false));
-    const feedbackHeight = doc.heightOfString(result.feedback, {
+    const feedbackHeight = safeHeightOfString(result.feedback, {
       width: W - 16,
     });
     doc
@@ -312,10 +331,10 @@ const buildPdf = (
         doc.font(getFont(false));
         const rowH = Math.max(
           28,
-          doc.heightOfString(c.studentAnswer.substring(0, 60), {
+          safeHeightOfString(c.studentAnswer.substring(0, 60), {
             width: 160,
           }) +
-            doc.heightOfString(c.analysis.substring(0, 80), {
+            safeHeightOfString(c.analysis.substring(0, 80), {
               width: 180,
             }) +
             12,
@@ -425,17 +444,34 @@ const buildBulkPdf = (
     const isMarathi = locale === "mr";
 
     // Register fonts for Marathi/Devanagari support
+    let fontsRegistered = false;
     if (isMarathi) {
-      doc.registerFont("NotoSans", NOTO_REGULAR);
-      doc.registerFont("NotoSans-Bold", NOTO_BOLD);
+      try {
+        doc.registerFont("NotoSans", NOTO_REGULAR);
+        doc.registerFont("NotoSans-Bold", NOTO_BOLD);
+        fontsRegistered = true;
+      } catch (fontError) {
+        console.error("Failed to register Devanagari fonts:", fontError);
+      }
     }
 
     // Helper to get appropriate font
     const getFont = (bold: boolean): string => {
-      if (isMarathi) {
+      if (isMarathi && fontsRegistered) {
         return bold ? "NotoSans-Bold" : "NotoSans";
       }
       return bold ? "Helvetica-Bold" : "Helvetica";
+    };
+
+    // Safe heightOfString wrapper that handles font issues
+    const safeHeightOfString = (text: string, options: { width: number }): number => {
+      try {
+        return doc.heightOfString(text, options);
+      } catch (e) {
+        const avgCharsPerLine = Math.floor(options.width / 6);
+        const lines = Math.ceil(text.length / avgCharsPerLine);
+        return lines * 14;
+      }
     };
 
     const title = isMarathi
@@ -649,7 +685,7 @@ const buildBulkPdf = (
       ry += 18;
       doc.font(getFont(false));
       const fbH = Math.min(
-        doc.heightOfString(r.feedback, { width: W - 16 }),
+        safeHeightOfString(r.feedback, { width: W - 16 }),
         120,
       );
       doc

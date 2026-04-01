@@ -21,6 +21,133 @@ interface FileItem {
   mimeType: string;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Progress Stat Card Component
+// ─────────────────────────────────────────────────────────────────────────────
+interface StatCardProps {
+  type: "time" | "progress" | "completed";
+  value: string | number;
+  label: string;
+  subValue?: string;
+  percent?: number;
+  isComplete?: boolean;
+  total?: number;
+  completed?: number;
+}
+
+const StatCard: React.FC<StatCardProps> = ({
+  type,
+  value,
+  label,
+  percent = 0,
+  isComplete = false,
+  total = 0,
+  completed = 0,
+}) => {
+  // Icon configurations
+  const icons = {
+    time: (
+      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    progress: (
+      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+      </svg>
+    ),
+    completed: (
+      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  };
+
+  const gradients = {
+    time: "from-indigo-500 to-violet-600",
+    progress: isComplete ? "from-emerald-500 to-teal-600" : "from-amber-500 to-orange-600",
+    completed: "from-emerald-500 to-teal-600",
+  };
+
+  const bgColors = {
+    time: "bg-indigo-50 dark:bg-indigo-950/40",
+    progress: isComplete ? "bg-emerald-50 dark:bg-emerald-950/40" : "bg-amber-50 dark:bg-amber-950/40",
+    completed: "bg-emerald-50 dark:bg-emerald-950/40",
+  };
+
+  return (
+    <div className={`
+      relative rounded-2xl p-4 
+      bg-white dark:bg-slate-800
+      border border-slate-200 dark:border-slate-700
+      shadow-sm hover:shadow-md
+      transition-all duration-300
+    `}>
+      {/* Header with icon and label */}
+      <div className="flex items-center gap-3 mb-3">
+        <div className={`
+          w-10 h-10 rounded-xl
+          bg-gradient-to-br ${gradients[type]}
+          flex items-center justify-center text-white
+          shadow-md
+          ${type === "time" ? "animate-pulse" : ""}
+        `}>
+          {icons[type]}
+        </div>
+        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+          {label}
+        </span>
+      </div>
+
+      {/* Content area */}
+      <div className={`rounded-xl p-3 ${bgColors[type]}`}>
+        {type === "time" && (
+          <p className="text-3xl font-black text-slate-800 dark:text-white font-mono tracking-tight">
+            {value}
+          </p>
+        )}
+        
+        {type === "progress" && (
+          <div className="space-y-2">
+            <div className="flex items-end justify-between">
+              <span className={`text-3xl font-black ${isComplete ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
+                {percent}%
+              </span>
+              {isComplete && (
+                <span className="text-emerald-500 text-xl">✓</span>
+              )}
+            </div>
+            {/* Progress bar */}
+            <div className="h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-700 ease-out ${isComplete ? "bg-gradient-to-r from-emerald-500 to-teal-500" : "bg-gradient-to-r from-amber-500 to-orange-500"}`}
+                style={{ width: `${percent}%` }}
+              />
+            </div>
+          </div>
+        )}
+        
+        {type === "completed" && (
+          <div className="flex items-end justify-between">
+            <div className="flex items-baseline gap-1">
+              <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400">
+                {completed}
+              </span>
+              <span className="text-xl font-bold text-slate-400">/</span>
+              <span className="text-xl font-bold text-slate-500 dark:text-slate-400">
+                {total}
+              </span>
+            </div>
+            {completed === total && total > 0 && (
+              <span className="text-emerald-500 text-xl animate-bounce">✓</span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const Scanner: React.FC<ScannerProps> = ({
   onGraded,
   onViewResults,
@@ -245,64 +372,27 @@ const Scanner: React.FC<ScannerProps> = ({
         </div>
 
         {(loading || progressStats.percent > 0) && (
-          <div className="px-8 pt-8 pb-4 bg-indigo-50/30 dark:bg-indigo-950/20 border-b border-indigo-100 dark:border-indigo-900/40">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-indigo-100 dark:border-indigo-900/40 flex items-center gap-4">
-                <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-white font-black animate-pulse">
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2.5"
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
-                    {t("scanner.time")}
-                  </p>
-                  <p className="text-2xl font-black text-indigo-900 dark:text-indigo-200">
-                    {formatTime(timer)}
-                  </p>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-indigo-100 dark:border-indigo-900/40 flex items-center gap-4">
-                <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-black transition-colors ${progressStats.percent === 100 ? "bg-green-500" : "bg-amber-500"}`}
-                >
-                  <span className="text-xl">{progressStats.percent}%</span>
-                </div>
-                <div className="flex-1">
-                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
-                    {t("scanner.progress")}
-                  </p>
-                  <div className="w-full bg-slate-100 dark:bg-slate-700 h-2 rounded-full mt-1 overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-700 ease-out ${progressStats.percent === 100 ? "bg-green-500" : "bg-amber-500"}`}
-                      style={{ width: `${progressStats.percent}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-indigo-100 dark:border-indigo-900/40 flex items-center gap-4">
-                <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-black text-xl">
-                  {progressStats.completed}/{progressStats.total}
-                </div>
-                <div>
-                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
-                    {t("scanner.completed")}
-                  </p>
-                  <p className="text-xl font-black text-slate-800 dark:text-white">
-                    {t("scanner.checked")}
-                  </p>
-                </div>
-              </div>
+          <div className="px-6 py-6 bg-slate-50/80 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <StatCard
+                type="time"
+                value={formatTime(timer)}
+                label={t("scanner.time")}
+              />
+              <StatCard
+                type="progress"
+                value={progressStats.percent}
+                label={t("scanner.progress")}
+                percent={progressStats.percent}
+                isComplete={progressStats.percent === 100}
+              />
+              <StatCard
+                type="completed"
+                value={`${progressStats.completed}/${progressStats.total}`}
+                label={t("scanner.completed")}
+                total={progressStats.total}
+                completed={progressStats.completed}
+              />
             </div>
           </div>
         )}

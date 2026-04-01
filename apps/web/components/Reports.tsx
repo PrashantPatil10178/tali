@@ -85,6 +85,8 @@ async function downloadReportPdf(
       resultToExport = await translateToEnglish(result);
     } catch (error) {
       console.error("Translation failed, using original content:", error);
+      // If translation fails (e.g., API overload), proceed with original content
+      // The PDF will still be generated with the original language
     }
   }
 
@@ -1062,37 +1064,89 @@ const DetailView: React.FC<DetailViewProps> = ({ result, onBack }) => {
               {t("reports.detail.trendSub")}
             </p>
           </div>
-        </div>
-        <div className="flex h-44 items-end gap-2 overflow-hidden rounded-xl bg-slate-50 px-4 pb-4 dark:bg-slate-800/50">
-          {corrections.length > 0 ? (
-            corrections.slice(0, 8).map((c, i) => {
-              const pctScore = c.maxMarks > 0 ? Math.round((c.marksObtained / c.maxMarks) * 100) : 0;
-              return (
-                <div
-                  key={c.questionNo || i}
-                  className="flex flex-1 flex-col items-center justify-end gap-1"
-                >
-                  <motion.div
-                    className={`w-full rounded-t-sm ${pctScore >= 70 ? 'bg-emerald-500/70' : pctScore >= 50 ? 'bg-amber-400/70' : 'bg-red-500/70'}`}
-                    initial={{ height: 0 }}
-                    animate={{ height: `${Math.max(pctScore, 10)}%` }}
-                    transition={{
-                      duration: 0.65,
-                      delay: 0.1 + i * 0.08,
-                      ease: "easeOut",
-                    }}
-                  />
-                  <span className="mt-1 text-[10px] font-bold text-slate-400">
-                    Q{c.questionNo || i + 1}
-                  </span>
-                </div>
-              );
-            })
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
-              {t("reports.detail.noQuestionData")}
+          {/* Legend */}
+          <div className="flex items-center gap-4 text-xs">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-emerald-500" />
+              <span className="text-slate-500">≥70%</span>
             </div>
-          )}
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-amber-400" />
+              <span className="text-slate-500">50-69%</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-red-500" />
+              <span className="text-slate-500">&lt;50%</span>
+            </div>
+          </div>
+        </div>
+        <div className="relative rounded-xl bg-slate-50 dark:bg-slate-800/50 p-4">
+          {/* Y-axis labels */}
+          <div className="absolute left-0 top-4 bottom-12 w-8 flex flex-col justify-between text-[10px] text-slate-400 font-medium">
+            <span>100%</span>
+            <span>75%</span>
+            <span>50%</span>
+            <span>25%</span>
+            <span>0%</span>
+          </div>
+          {/* Chart area */}
+          <div className="ml-8 h-48">
+            {/* Grid lines */}
+            <div className="absolute left-8 right-4 top-4 bottom-12 flex flex-col justify-between pointer-events-none">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div key={i} className="border-t border-slate-200 dark:border-slate-700/50" />
+              ))}
+            </div>
+            {/* Bars */}
+            <div className="relative h-full flex items-end gap-3 pt-4 pb-8">
+              {corrections.length > 0 ? (
+                corrections.slice(0, 10).map((c, i) => {
+                  const pctScore = c.maxMarks > 0 ? Math.round((c.marksObtained / c.maxMarks) * 100) : 0;
+                  const barColor = pctScore >= 70 ? 'bg-emerald-500' : pctScore >= 50 ? 'bg-amber-400' : 'bg-red-500';
+                  return (
+                    <div
+                      key={c.questionNo || i}
+                      className="flex-1 flex flex-col items-center justify-end h-full group"
+                    >
+                      {/* Score label on hover */}
+                      <div className="mb-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className={`text-xs font-bold ${pctScore >= 70 ? 'text-emerald-600' : pctScore >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
+                          {pctScore}%
+                        </span>
+                      </div>
+                      {/* Bar */}
+                      <motion.div
+                        className={`w-full max-w-[40px] rounded-t-md ${barColor} shadow-sm cursor-pointer hover:opacity-90 transition-opacity`}
+                        initial={{ height: 0 }}
+                        animate={{ height: `${Math.max(pctScore, 5)}%` }}
+                        transition={{
+                          duration: 0.65,
+                          delay: 0.1 + i * 0.08,
+                          ease: "easeOut",
+                        }}
+                        title={`Q${c.questionNo || i + 1}: ${c.marksObtained}/${c.maxMarks} (${pctScore}%)`}
+                      />
+                      {/* Question label */}
+                      <span className="mt-2 text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                        Q{c.questionNo || i + 1}
+                      </span>
+                      {/* Marks below */}
+                      <span className="text-[9px] text-slate-400">
+                        {c.marksObtained}/{c.maxMarks}
+                      </span>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-slate-400 text-sm h-full">
+                  <svg className="w-12 h-12 mb-2 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  {t("reports.detail.noQuestionData")}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </motion.div>
 
@@ -1114,6 +1168,208 @@ const DetailView: React.FC<DetailViewProps> = ({ result, onBack }) => {
         <button className="relative z-10 mt-4 whitespace-nowrap rounded-xl bg-white px-7 py-3 text-sm font-extrabold text-indigo-700 transition-colors hover:bg-slate-50 md:mt-0">
           {t("reports.detail.startPlan")}
         </button>
+      </motion.div>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          REVISION PLAN SECTION
+          ═══════════════════════════════════════════════════════════════════════ */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0, transition: { duration: 0.5, delay: 0.35 } }}
+        className="dashboard-surface-card overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-emerald-50 to-teal-50 p-5 dark:border-slate-800 dark:from-emerald-900/20 dark:to-teal-900/20">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/30">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                {t("reports.detail.revisionPlan") || "Personalized Revision Plan"}
+              </h3>
+              <p className="text-sm text-slate-500">
+                {t("reports.detail.revisionPlanSub") || "AI-generated study roadmap based on your performance"}
+              </p>
+            </div>
+          </div>
+          <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            {t("reports.detail.aiGenerated") || "AI Generated"}
+          </span>
+        </div>
+
+        {/* Revision Timeline */}
+        <div className="p-5">
+          <div className="space-y-4">
+            {/* Week breakdown */}
+            {[
+              {
+                week: 1,
+                title: t("reports.detail.week1Title") || "Foundation Review",
+                desc: t("reports.detail.week1Desc") || "Revisit core concepts and formulas",
+                tasks: result.weakAreas.slice(0, 2).map(area => `Review ${area} basics`) || ["Review fundamental concepts", "Practice basic problems"],
+                time: "2-3 hrs/day",
+                color: "emerald",
+              },
+              {
+                week: 2,
+                title: t("reports.detail.week2Title") || "Practice & Application",
+                desc: t("reports.detail.week2Desc") || "Solve practice problems and past papers",
+                tasks: ["Solve 10 practice questions daily", "Attempt 2 past papers", "Focus on weak areas"],
+                time: "3-4 hrs/day",
+                color: "blue",
+              },
+              {
+                week: 3,
+                title: t("reports.detail.week3Title") || "Mock Tests & Revision",
+                desc: t("reports.detail.week3Desc") || "Take mock tests and final revision",
+                tasks: ["Take 3 full mock tests", "Review mistakes", "Quick revision of all topics"],
+                time: "4-5 hrs/day",
+                color: "violet",
+              },
+            ].map((weekPlan, idx) => (
+              <motion.div
+                key={weekPlan.week}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0, transition: { delay: 0.4 + idx * 0.1 } }}
+                className="relative"
+              >
+                {/* Timeline connector */}
+                {idx < 2 && (
+                  <div className="absolute left-5 top-14 h-[calc(100%-20px)] w-0.5 bg-gradient-to-b from-slate-200 to-slate-100 dark:from-slate-700 dark:to-slate-800" />
+                )}
+                
+                <div className="flex gap-4">
+                  {/* Week badge */}
+                  <div className={`flex-shrink-0 w-10 h-10 rounded-full bg-${weekPlan.color}-100 dark:bg-${weekPlan.color}-900/30 flex items-center justify-center text-${weekPlan.color}-600 dark:text-${weekPlan.color}-400 font-bold text-sm border-2 border-${weekPlan.color}-200 dark:border-${weekPlan.color}-800 z-10`}
+                    style={{
+                      backgroundColor: weekPlan.color === 'emerald' ? 'rgb(209 250 229)' : weekPlan.color === 'blue' ? 'rgb(219 234 254)' : 'rgb(237 233 254)',
+                      borderColor: weekPlan.color === 'emerald' ? 'rgb(167 243 208)' : weekPlan.color === 'blue' ? 'rgb(191 219 254)' : 'rgb(221 214 254)',
+                      color: weekPlan.color === 'emerald' ? 'rgb(5 150 105)' : weekPlan.color === 'blue' ? 'rgb(37 99 235)' : 'rgb(124 58 237)',
+                    }}
+                  >
+                    W{weekPlan.week}
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="flex-1 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800/50 p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h4 className="font-bold text-slate-900 dark:text-white">{weekPlan.title}</h4>
+                        <p className="text-sm text-slate-500">{weekPlan.desc}</p>
+                      </div>
+                      <span className="text-xs font-semibold text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-md">
+                        {weekPlan.time}
+                      </span>
+                    </div>
+                    <ul className="mt-3 space-y-1.5">
+                      {weekPlan.tasks.map((task, ti) => (
+                        <li key={ti} className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                          <svg className="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          {task}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer with action */}
+        <div className="border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 p-4 flex items-center justify-between">
+          <p className="text-sm text-slate-500">
+            {t("reports.detail.revisionNote") || "Follow this plan consistently for best results"}
+          </p>
+          <button className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-500/20">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            {t("reports.detail.downloadPlan") || "Download Plan"}
+          </button>
+        </div>
+      </motion.div>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          REVIEW MATERIALS SECTION
+          ═══════════════════════════════════════════════════════════════════════ */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0, transition: { duration: 0.5, delay: 0.4 } }}
+        className="dashboard-surface-card overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-amber-50 to-orange-50 p-5 dark:border-slate-800 dark:from-amber-900/20 dark:to-orange-900/20">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500 text-white shadow-lg shadow-amber-500/30">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                {t("reports.detail.reviewMaterials") || "Review Materials"}
+              </h3>
+              <p className="text-sm text-slate-500">
+                {t("reports.detail.reviewMaterialsSub") || "Curated resources for your weak areas"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Materials Grid */}
+        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {(result.weakAreas.length > 0 ? result.weakAreas : ["Fundamental Concepts", "Problem Solving", "Time Management"]).slice(0, 6).map((area, i) => {
+            const types = [
+              { icon: "📹", type: "Video", color: "red" },
+              { icon: "📄", type: "Notes", color: "blue" },
+              { icon: "📝", type: "Practice", color: "green" },
+            ];
+            const t = types[i % 3];
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1, transition: { delay: 0.45 + i * 0.05 } }}
+                className="group relative rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:shadow-lg hover:border-amber-300 dark:hover:border-amber-700 transition-all cursor-pointer"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">{t.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10px] font-bold uppercase text-amber-600 dark:text-amber-400">
+                      {t.type}
+                    </span>
+                    <h4 className="font-bold text-slate-900 dark:text-white truncate">
+                      {area}
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {result.subject} • {t.type === "Video" ? "15 min" : t.type === "Notes" ? "5 pages" : "10 questions"}
+                    </p>
+                  </div>
+                  <svg className="w-5 h-5 text-slate-300 group-hover:text-amber-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 p-4 flex items-center justify-center">
+          <button className="text-sm font-bold text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 flex items-center gap-1">
+            {t("reports.detail.viewAllMaterials") || "View All Materials"}
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+          </button>
+        </div>
       </motion.div>
 
       {/* Language picker */}
