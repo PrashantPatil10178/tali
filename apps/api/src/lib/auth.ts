@@ -1,12 +1,10 @@
 import { Database } from "bun:sqlite";
 import { betterAuth } from "better-auth";
 
-const trustedOrigins = [
-  "https://tali-frontend.prashantpatil.dev",
-  "http://localhost:3000",
-];
-
-const authBaseUrl = "https://tali-backend.prashantpatil.dev";
+// Resolve trusted origins from env (comma-separated) with local fallback
+const trustedOrigins = process.env.BETTER_AUTH_TRUSTED_ORIGINS
+  ? process.env.BETTER_AUTH_TRUSTED_ORIGINS.split(",").map((o) => o.trim())
+  : ["http://localhost:3000"];
 
 const databasePath = (process.env.DATABASE_URL || "file:./dev.db").replace(
   /^file:/,
@@ -29,7 +27,9 @@ const socialProviders =
 
 export const auth = betterAuth({
   appName: "TALI",
-  baseURL: authBaseUrl,
+  // baseURL is read from BETTER_AUTH_URL env var automatically.
+  // Only set it explicitly here if the env var is not defined.
+  baseURL: process.env.BETTER_AUTH_URL,
   basePath: "/api/auth",
   database,
   emailAndPassword: {
@@ -38,6 +38,7 @@ export const auth = betterAuth({
   },
   socialProviders,
   trustedOrigins,
+  // modelName must match the Prisma model name (@@map table name for raw SQLite adapter)
   user: {
     modelName: "users",
   },
@@ -46,8 +47,8 @@ export const auth = betterAuth({
   },
   session: {
     modelName: "sessions",
-    expiresIn: 60 * 60 * 24 * 7,
-    updateAge: 60 * 60 * 24,
+    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    updateAge: 60 * 60 * 24,     // refresh cookie daily
   },
   verification: {
     modelName: "verifications",

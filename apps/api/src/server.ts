@@ -5,10 +5,10 @@ import { geminiRoutes } from "@/modules/gemini/routes";
 import { reportsRoutes } from "@/modules/reports/routes";
 import { studentsRoutes } from "@/modules/students/routes";
 
-const allowedOrigins = [
-  "https://tali-frontend.prashantpatil.dev",
-  "http://localhost:3000",
-];
+// Read allowed origins from env (comma-separated) with local fallback
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
+  : ["http://localhost:3000"];
 
 const betterAuthPlugin = new Elysia({ name: "better-auth" })
   .mount(auth.handler)

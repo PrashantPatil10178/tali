@@ -3,7 +3,7 @@
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import UserAuthForm from "./user-auth-form";
+import UserSignUpForm from "./user-signup-form";
 import { useLanguage } from "@/lib/LanguageContext";
 import { LanguageSwitcher } from "@/components/language-switcher";
 
@@ -57,7 +57,7 @@ export default function SignUpViewPage() {
               {t("auth.signUpSubtitle")}
             </p>
           </div>
-          <UserAuthForm />
+          <UserSignUpForm />
         </div>
       </div>
     </div>
