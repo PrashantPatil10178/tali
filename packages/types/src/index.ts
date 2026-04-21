@@ -38,6 +38,8 @@ export interface GradingResult {
   schoolName?: string;
   examType?: string;
   rollNumber?: string;
+  analysisId?: string;
+  studentId?: string;
 }
 
 export interface StudentNote {

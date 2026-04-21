@@ -610,7 +610,8 @@ export default function ScanViewPage() {
               const enrichedResult = {
                 ...result,
                 analysisId: saveResponse.analysisId,
-              } as GradingResult & { analysisId?: string };
+                studentId: saveResponse.studentId,
+              };
               savedResults.push(enrichedResult);
 
               addNotification({

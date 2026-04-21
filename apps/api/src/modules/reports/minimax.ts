@@ -28,8 +28,9 @@ const DEVANAGARI_REGULAR = path.join(
 );
 const DEVANAGARI_BOLD = path.join(API_FONTS_DIR, "NotoSansDevanagari-Bold.ttf");
 
-const CHILD_FRIENDLY_ACCENT = "#FF7A45";
-const CHILD_FRIENDLY_COVER_BG = "#FFF3E0";
+const STUDY_REPORT_ACCENT = "#2A5A6B";
+const STUDY_REPORT_COVER_BG = "#F8F4ED";
+const REPORT_AUTHOR = "TALI Academic Analytics";
 
 const escapeArg = (value: string): string => value.replace(/"/g, '\\"');
 
@@ -85,7 +86,7 @@ export const mapGradingResultToMinimaxContent = (
   const isMarathi = locale === "mr";
   const L = isMarathi
     ? {
-        reportTitle: "विद्यार्थी विश्लेषण अहवाल",
+        reportTitle: "TALI अध्ययन अहवाल",
         subject: "विषय",
         aiFeedback: "AI अभिप्राय",
         weakAreas: "कमकुवत क्षेत्रे",
@@ -99,7 +100,7 @@ export const mapGradingResultToMinimaxContent = (
         analysis: "विश्लेषण",
       }
     : {
-        reportTitle: "Student Analysis Report",
+        reportTitle: "TALI Study Report",
         subject: "Subject",
         aiFeedback: "AI Feedback",
         weakAreas: "Weak Areas",
@@ -186,9 +187,9 @@ const buildTokensWithLocaleFonts = async (
     "python3",
     `\"${path.join(MINIMAX_SCRIPTS_ROOT, "palette.py")}\"`,
     `--title \"${escapeArg(title)}\"`,
-    "--type magazine",
-    `--accent \"${CHILD_FRIENDLY_ACCENT}\"`,
-    `--cover-bg \"${CHILD_FRIENDLY_COVER_BG}\"`,
+    "--type academic",
+    `--accent \"${STUDY_REPORT_ACCENT}\"`,
+    `--cover-bg \"${STUDY_REPORT_COVER_BG}\"`,
     `--author \"${escapeArg(author)}\"`,
     `--date \"${escapeArg(date)}\"`,
     `--out \"${tokensPath}\"`,
@@ -305,15 +306,14 @@ export const buildPdfMinimax = async (
 
   await writeFile(contentPath, JSON.stringify(content, null, 2), "utf8");
 
-  const L =
-    locale === "mr" ? "विद्यार्थी विश्लेषण अहवाल" : "Student Analysis Report";
+  const L = locale === "mr" ? "TALI अध्ययन अहवाल" : "TALI Study Report";
 
   try {
     await renderPdfWithPipeline(
       contentPath,
       outPath,
       `${displayName} - ${L}`,
-      displayName,
+      REPORT_AUTHOR,
       localizedResult.date,
       locale,
     );
@@ -336,9 +336,7 @@ export const buildBulkPdfMinimax = async (
   );
 
   const isMarathi = locale === "mr";
-  const L = isMarathi
-    ? "विद्यार्थी विश्लेषण अहवाल (Bulk)"
-    : "Student Analysis Report (Bulk)";
+  const L = isMarathi ? "TALI अध्ययन अहवाल (Bulk)" : "TALI Study Report (Bulk)";
 
   const allContent: any[] = [];
   localizedResults.forEach((result, index) => {
@@ -358,7 +356,7 @@ export const buildBulkPdfMinimax = async (
       contentPath,
       outPath,
       L,
-      "TALI",
+      REPORT_AUTHOR,
       new Date().toISOString(),
       locale,
     );

@@ -10,6 +10,7 @@ import {
   IconRocket,
   IconSparkles,
   IconTargetArrow,
+  IconUser,
 } from "@tabler/icons-react";
 import { GradingResult, LearningPlan } from "@tali/types";
 import {
@@ -198,9 +199,14 @@ export default function ReportsViewPage(): React.JSX.Element {
   const [planMinutes, setPlanMinutes] = useState(40);
   const [generatedPlan, setGeneratedPlan] = useState<LearningPlan | null>(null);
   const [pdfLocale, setPdfLocale] = useState<Locale>(locale);
+  const [hasAppliedQuerySelection, setHasAppliedQuerySelection] =
+    useState(false);
   const addNotification = useNotificationStore(
     (state) => state.addNotification,
   );
+
+  const requestedAnalysisId = searchParams.get("analysisId");
+  const requestedStudentId = searchParams.get("studentId");
 
   useEffect(() => {
     setPdfLocale(locale);
@@ -363,6 +369,57 @@ export default function ReportsViewPage(): React.JSX.Element {
 
   const fromScan = searchParams.get("source") === "scan";
 
+  useEffect(() => {
+    setHasAppliedQuerySelection(false);
+  }, [requestedAnalysisId, requestedStudentId]);
+
+  useEffect(() => {
+    if (hasAppliedQuerySelection) {
+      return;
+    }
+
+    if (!requestedAnalysisId && !requestedStudentId) {
+      setHasAppliedQuerySelection(true);
+      return;
+    }
+
+    const matchedReport = allReports.find((report) => {
+      if (requestedAnalysisId && report.analysisId === requestedAnalysisId) {
+        return true;
+      }
+
+      if (requestedStudentId && report.studentId === requestedStudentId) {
+        return true;
+      }
+
+      return false;
+    });
+
+    if (matchedReport) {
+      setSelectedReport(matchedReport);
+      setHasAppliedQuerySelection(true);
+      return;
+    }
+
+    if (!loadingHistory) {
+      setHasAppliedQuerySelection(true);
+    }
+  }, [
+    allReports,
+    hasAppliedQuerySelection,
+    loadingHistory,
+    requestedAnalysisId,
+    requestedStudentId,
+  ]);
+
+  const openStudentDetails = (studentId?: string): void => {
+    if (!studentId) {
+      return;
+    }
+
+    router.push(`/dashboard/students/${studentId}`);
+  };
+
   const handleDownloadReport = async (): Promise<void> => {
     if (!selectedReport) return;
     setDownloadBusy(true);
@@ -438,11 +495,7 @@ export default function ReportsViewPage(): React.JSX.Element {
       );
       setGeneratedPlan(plan);
 
-      const selectedAnalysisId = (
-        selectedReport as GradingResult & {
-          analysisId?: string;
-        }
-      ).analysisId;
+      const selectedAnalysisId = selectedReport.analysisId;
 
       if (selectedAnalysisId) {
         await saveLearningPlan(selectedAnalysisId, plan);
@@ -526,6 +579,15 @@ export default function ReportsViewPage(): React.JSX.Element {
                   onChange={setPdfLocale}
                   t={t}
                 />
+                {selectedReport.studentId ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => openStudentDetails(selectedReport.studentId)}
+                  >
+                    <IconUser className="mr-2 h-4 w-4" />
+                    {t("reports.openStudentDetail")}
+                  </Button>
+                ) : null}
                 <Button variant="outline" onClick={handleSendToWorkHome}>
                   <IconSparkles className="mr-2 h-4 w-4" />
                   Send to WorkHome
@@ -998,6 +1060,16 @@ export default function ReportsViewPage(): React.JSX.Element {
                                 {t("reports.weakConceptCount")}:{" "}
                                 {report.weakAreas.length}
                               </Badge>
+                              {report.studentId ? (
+                                <Button
+                                  variant="outline"
+                                  onClick={() =>
+                                    openStudentDetails(report.studentId)
+                                  }
+                                >
+                                  {t("reports.openStudentDetail")}
+                                </Button>
+                              ) : null}
                               <Button
                                 variant="outline"
                                 onClick={() => setSelectedReport(report)}

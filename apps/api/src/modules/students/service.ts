@@ -1,6 +1,183 @@
 import { prisma } from "@tali/database/client";
 import type { GradingResult, LearningPlan } from "@tali/types";
 
+interface SeedStudentAssessment {
+  readonly studentName: string;
+  readonly rollNumber: string;
+  readonly className: string;
+  readonly subject: string;
+  readonly score: number;
+  readonly totalMarks: number;
+  readonly weakAreas: readonly string[];
+  readonly feedback: string;
+  readonly examType: string;
+  readonly daysAgo: number;
+}
+
+const STUDENT_SEED_ASSESSMENTS: readonly SeedStudentAssessment[] = [
+  {
+    studentName: "Arjun Singh",
+    rollNumber: "A-101",
+    className: "10-A",
+    subject: "Mathematics",
+    score: 41,
+    totalMarks: 50,
+    weakAreas: ["Word problems", "Linear equations"],
+    feedback:
+      "Good numerical accuracy. Focus on step-by-step reasoning in applied questions.",
+    examType: "Unit Test",
+    daysAgo: 2,
+  },
+  {
+    studentName: "Priya Desai",
+    rollNumber: "A-102",
+    className: "10-A",
+    subject: "Science",
+    score: 44,
+    totalMarks: 50,
+    weakAreas: ["Diagram labeling"],
+    feedback:
+      "Strong conceptual understanding. Improve neat diagram annotations for full marks.",
+    examType: "Weekly Assessment",
+    daysAgo: 3,
+  },
+  {
+    studentName: "Rohan Patil",
+    rollNumber: "A-103",
+    className: "10-A",
+    subject: "English",
+    score: 36,
+    totalMarks: 50,
+    weakAreas: ["Grammar accuracy", "Answer structure"],
+    feedback:
+      "Content is relevant, but sentence construction needs refinement.",
+    examType: "Class Test",
+    daysAgo: 5,
+  },
+  {
+    studentName: "Sneha Kulkarni",
+    rollNumber: "A-104",
+    className: "10-A",
+    subject: "Marathi",
+    score: 46,
+    totalMarks: 50,
+    weakAreas: ["Spelling consistency"],
+    feedback: "Excellent expression. Revise spelling in long-form answers.",
+    examType: "Weekly Assessment",
+    daysAgo: 6,
+  },
+  {
+    studentName: "Aman Verma",
+    rollNumber: "A-105",
+    className: "10-A",
+    subject: "History",
+    score: 33,
+    totalMarks: 50,
+    weakAreas: ["Chronology", "Answer depth"],
+    feedback:
+      "Key points are present. Add timeline anchors and richer explanations.",
+    examType: "Unit Test",
+    daysAgo: 8,
+  },
+  {
+    studentName: "Kavya Joshi",
+    rollNumber: "A-106",
+    className: "10-A",
+    subject: "Geography",
+    score: 39,
+    totalMarks: 50,
+    weakAreas: ["Map interpretation"],
+    feedback:
+      "Concept clarity is good. Practice map-based questions for faster accuracy.",
+    examType: "Class Test",
+    daysAgo: 10,
+  },
+];
+
+const shouldAutoSeedStudents = (): boolean => {
+  if (process.env.TALI_AUTO_SEED_STUDENTS === "false") {
+    return false;
+  }
+
+  if (process.env.TALI_AUTO_SEED_STUDENTS === "true") {
+    return true;
+  }
+
+  return process.env.NODE_ENV !== "production";
+};
+
+const clampNumber = (value: number, min: number, max: number): number => {
+  return Math.min(Math.max(value, min), max);
+};
+
+const buildSeedCorrections = (
+  subject: string,
+  score: number,
+  totalMarks: number,
+  weakAreas: readonly string[],
+): GradingResult["corrections"] => {
+  const percent = totalMarks > 0 ? (score / totalMarks) * 100 : 0;
+  const base = Math.round((percent / 100) * 10);
+  const primaryGap = weakAreas[0] ?? "concept clarity";
+
+  return [
+    {
+      questionNo: "1",
+      questionText: `${subject} concept check`,
+      studentAnswer: "Attempted with key points",
+      correctAnswer: "Complete definition with supporting explanation",
+      marksObtained: clampNumber(base + 1, 0, 10),
+      maxMarks: 10,
+      analysis:
+        "Good start. Include one more supporting step to make the answer complete.",
+    },
+    {
+      questionNo: "2",
+      questionText: `${subject} application question`,
+      studentAnswer: "Partially correct process",
+      correctAnswer: "Full process with final conclusion",
+      marksObtained: clampNumber(base, 0, 10),
+      maxMarks: 10,
+      analysis: `Revise ${primaryGap} and practice two similar examples.`,
+    },
+    {
+      questionNo: "3",
+      questionText: `${subject} reasoning question`,
+      studentAnswer: "Short response with basic reasoning",
+      correctAnswer: "Structured reasoning with examples",
+      marksObtained: clampNumber(base - 1, 0, 10),
+      maxMarks: 10,
+      analysis:
+        "Reasoning is present but concise. Expand with one clear explanation point.",
+    },
+  ];
+};
+
+const buildSeedResult = (assessment: SeedStudentAssessment): GradingResult => {
+  const resultDate = new Date(Date.now() - assessment.daysAgo * 86400000);
+
+  return {
+    studentName: assessment.studentName,
+    subject: assessment.subject,
+    score: assessment.score,
+    totalMarks: assessment.totalMarks,
+    feedback: assessment.feedback,
+    corrections: buildSeedCorrections(
+      assessment.subject,
+      assessment.score,
+      assessment.totalMarks,
+      assessment.weakAreas,
+    ),
+    date: resultDate.toISOString(),
+    weakAreas: [...assessment.weakAreas],
+    className: assessment.className,
+    examType: assessment.examType,
+    rollNumber: assessment.rollNumber,
+  };
+};
+
+let seedingInFlight: Promise<void> | null = null;
+
 // Ensure a default school and class exist for auto-created students
 async function ensureDefaultSchoolAndClass() {
   let school = await prisma.school.findFirst({
@@ -188,6 +365,61 @@ export async function saveGradingResult(result: GradingResult): Promise<{
   };
 }
 
+export async function seedStudentsData(): Promise<{
+  skipped: boolean;
+  createdAssessments: number;
+  reason?: string;
+}> {
+  const [studentCount, analysisCount] = await Promise.all([
+    prisma.student.count(),
+    prisma.answerAnalysis.count(),
+  ]);
+
+  if (studentCount > 0 || analysisCount > 0) {
+    return {
+      skipped: true,
+      createdAssessments: 0,
+      reason: "Existing student data detected. Seed step skipped.",
+    };
+  }
+
+  for (const assessment of STUDENT_SEED_ASSESSMENTS) {
+    await saveGradingResult(buildSeedResult(assessment));
+  }
+
+  return {
+    skipped: false,
+    createdAssessments: STUDENT_SEED_ASSESSMENTS.length,
+  };
+}
+
+async function ensureSeededStudentsData(): Promise<void> {
+  if (!shouldAutoSeedStudents()) {
+    return;
+  }
+
+  if (seedingInFlight) {
+    return seedingInFlight;
+  }
+
+  seedingInFlight = seedStudentsData()
+    .then((result) => {
+      if (!result.skipped) {
+        console.info(
+          `Seeded ${result.createdAssessments} initial student assessments.`,
+        );
+      }
+    })
+    .catch((error) => {
+      console.error("Student auto-seeding failed:", error);
+    })
+    .finally(() => {
+      seedingInFlight = null;
+    });
+
+  return seedingInFlight;
+}
+
 // Save a learning plan for an analysis
 export async function saveLearningPlan(
   analysisId: string,
@@ -238,6 +470,8 @@ export async function getAllStudents(): Promise<
     lastTestDate: string | null;
   }>
 > {
+  await ensureSeededStudentsData();
+
   const students = await prisma.student.findMany({
     include: {
       class: true,
@@ -284,7 +518,7 @@ export async function getStudentProfile(studentId: string): Promise<{
   name: string;
   rollNumber: string;
   className: string;
-  results: Array<GradingResult & { analysisId: string }>;
+  results: Array<GradingResult & { analysisId: string; studentId: string }>;
   learningPlans: LearningPlan[];
 } | null> {
   const student = await prisma.student.findUnique({
@@ -315,7 +549,9 @@ export async function getStudentProfile(studentId: string): Promise<{
 
   if (!student) return null;
 
-  const results: Array<GradingResult & { analysisId: string }> = [];
+  const results: Array<
+    GradingResult & { analysisId: string; studentId: string }
+  > = [];
   const learningPlans: LearningPlan[] = [];
 
   for (const sheet of student.answerSheets) {
@@ -344,6 +580,7 @@ export async function getStudentProfile(studentId: string): Promise<{
         weakAreas: weakTopics?.en || weakTopics?.mr || [],
         className: student.class.name,
         analysisId: analysis.id,
+        studentId: student.id,
       });
 
       if (analysis.learningImprovementPlan) {
@@ -381,6 +618,8 @@ export async function getStudentProfile(studentId: string): Promise<{
 
 // Get all grading history (for reports page)
 export async function getAllGradingHistory(): Promise<GradingResult[]> {
+  await ensureSeededStudentsData();
+
   const analyses = await prisma.answerAnalysis.findMany({
     include: {
       studentAnswerSheet: {
@@ -433,6 +672,7 @@ export async function getAllGradingHistory(): Promise<GradingResult[]> {
       weakAreas: weakTopics?.en || weakTopics?.mr || [],
       className: student?.class?.name,
       analysisId: analysis.id,
+      studentId: student?.id,
     };
   });
 }
@@ -451,6 +691,8 @@ export async function getDashboardStats(): Promise<{
     weakAreas: string[];
   }>;
 }> {
+  await ensureSeededStudentsData();
+
   const [studentCount, analysisCount, analyses, subjects] = await Promise.all([
     prisma.student.count(),
     prisma.answerAnalysis.count(),

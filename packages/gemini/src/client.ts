@@ -15,7 +15,7 @@ const getApiBaseUrl = () =>
 
 // ── Student API Types ────────────────────────────────────────────────────────
 
-interface StudentListItem {
+export interface StudentListItem {
   id: string;
   name: string;
   rollNumber: string;
