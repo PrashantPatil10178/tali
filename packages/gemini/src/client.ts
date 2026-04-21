@@ -70,11 +70,13 @@ export const generateLearningPlan = async (
   result: GradingResult,
   days: number,
   dailyMinutes: number,
+  language?: string,
 ): Promise<LearningPlan> => {
   return callGeminiApi<LearningPlan>("generateLearningPlan", {
     result,
     days,
     dailyMinutes,
+    language,
   });
 };
 
@@ -113,7 +115,12 @@ export const translateToEnglish = async (
  */
 export const saveGradingResult = async (
   result: GradingResult,
-): Promise<{ success: boolean; studentId?: string; analysisId?: string; error?: string }> => {
+): Promise<{
+  success: boolean;
+  studentId?: string;
+  analysisId?: string;
+  error?: string;
+}> => {
   const response = await fetch(`${getApiBaseUrl()}/api/students/results`, {
     method: "POST",
     credentials: "include",
@@ -131,12 +138,15 @@ export const saveLearningPlan = async (
   analysisId: string,
   plan: LearningPlan,
 ): Promise<{ success: boolean; planId?: string; error?: string }> => {
-  const response = await fetch(`${getApiBaseUrl()}/api/students/learning-plans`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ analysisId, plan }),
-  });
+  const response = await fetch(
+    `${getApiBaseUrl()}/api/students/learning-plans`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ analysisId, plan }),
+    },
+  );
 
   return response.json();
 };
@@ -201,14 +211,19 @@ export const getAllGradingHistory = async (): Promise<{
 /**
  * Get dashboard statistics
  */
-export const getDashboardStats = async (): Promise<{
-  success: boolean;
-  error?: string;
-} & Partial<DashboardStats>> => {
-  const response = await fetch(`${getApiBaseUrl()}/api/students/dashboard/stats`, {
-    method: "GET",
-    credentials: "include",
-  });
+export const getDashboardStats = async (): Promise<
+  {
+    success: boolean;
+    error?: string;
+  } & Partial<DashboardStats>
+> => {
+  const response = await fetch(
+    `${getApiBaseUrl()}/api/students/dashboard/stats`,
+    {
+      method: "GET",
+      credentials: "include",
+    },
+  );
 
   return response.json();
 };

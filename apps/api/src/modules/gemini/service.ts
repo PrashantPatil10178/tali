@@ -1,7 +1,26 @@
 import { GradingResult, LearningPlan } from "@tali/types";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const getNumericEnv = (value: string | undefined, fallback: number): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
 const GEMINI_API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
+const DEFAULT_GEMINI_MODEL =
+  process.env.GEMINI_MODEL?.trim() || "gemini-3-flash-preview";
+const GEMINI_REQUEST_TIMEOUT_MS = getNumericEnv(
+  process.env.GEMINI_REQUEST_TIMEOUT_MS,
+  120000,
+);
+const GEMINI_ANALYZE_MAX_RETRIES = getNumericEnv(
+  process.env.GEMINI_ANALYZE_MAX_RETRIES,
+  2,
+);
+const GEMINI_ANALYZE_THINKING_BUDGET = getNumericEnv(
+  process.env.GEMINI_ANALYZE_THINKING_BUDGET,
+  0,
+);
 
 const SchemaType = {
   ARRAY: "ARRAY",
@@ -124,6 +143,7 @@ async function generateContent({
       headers: {
         "Content-Type": "application/json",
       },
+      signal: AbortSignal.timeout(GEMINI_REQUEST_TIMEOUT_MS),
       body: JSON.stringify({
         contents: normalizeContents(contents),
         systemInstruction: config?.systemInstruction
@@ -179,12 +199,49 @@ async function callWithRetry<T>(
     } catch (error) {
       lastError = error;
       const errorString = JSON.stringify(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      const errorName =
+        error && typeof error === "object" && "name" in error
+          ? String((error as { name?: unknown }).name ?? "")
+          : "";
 
-      if (
+      const isRateLimited =
         errorString.includes("429") ||
-        errorString.includes("RESOURCE_EXHAUSTED")
-      ) {
-        const waitTime = Math.pow(2, attempt + 1) * 2000 + Math.random() * 1000;
+        errorString.includes("RESOURCE_EXHAUSTED") ||
+        errorMessage.includes("429") ||
+        errorMessage.includes("RESOURCE_EXHAUSTED");
+
+      const isTimeout =
+        errorName === "TimeoutError" ||
+        errorMessage.toLowerCase().includes("timed out") ||
+        errorString.toLowerCase().includes("timed out");
+
+      const isConnectionReset =
+        errorString.includes("ECONNRESET") ||
+        errorMessage.includes("ECONNRESET") ||
+        errorMessage
+          .toLowerCase()
+          .includes("socket connection was closed unexpectedly");
+
+      if (isRateLimited || isTimeout || isConnectionReset) {
+        const waitTime =
+          Math.min(12000, Math.pow(2, attempt + 1) * 1200) +
+          Math.random() * 600;
+
+        console.warn("[gemini] transient failure, retrying", {
+          attempt: attempt + 1,
+          maxRetries,
+          waitTimeMs: Math.round(waitTime),
+          reason: isRateLimited
+            ? "rate_limit"
+            : isTimeout
+              ? "timeout"
+              : "connection_reset",
+          errorMessage,
+          errorName,
+        });
+
         await delay(waitTime);
         continue;
       }
@@ -201,6 +258,16 @@ export async function analyzeAnswerSheet(
 ): Promise<GradingResult[]> {
   const [header, base64Data] = dataUrl.split(",");
   const mimeType = header.match(/:(.*?);/)?.[1] || "image/jpeg";
+  const approximatePayloadBytes = Math.floor(base64Data.length * 0.75);
+
+  console.info("[gemini] analyze request started", {
+    model: DEFAULT_GEMINI_MODEL,
+    mimeType,
+    payloadBytes: approximatePayloadBytes,
+    timeoutMs: GEMINI_REQUEST_TIMEOUT_MS,
+    maxRetries: GEMINI_ANALYZE_MAX_RETRIES,
+    thinkingBudget: GEMINI_ANALYZE_THINKING_BUDGET,
+  });
 
   const systemInstruction = `Identity: Guruji AI (गुरुजी AI - The Expert Maharashtra School Examiner).
 Role: You are a meticulous examiner specializing in Maharashtra State Board primary education (Std 1-8).
@@ -270,7 +337,7 @@ IMPORTANT: Generate COMPREHENSIVE, DETAILED content - avoid short or brief respo
 
   return callWithRetry(async () => {
     const response = await generateContent({
-      model: "gemini-3-flash-preview",
+      model: DEFAULT_GEMINI_MODEL,
       contents: {
         parts: [
           { inlineData: { data: base64Data, mimeType } },
@@ -291,7 +358,10 @@ IMPORTANT: Generate COMPREHENSIVE, DETAILED content - avoid short or brief respo
       config: {
         systemInstruction,
         temperature: 0.1,
-        maxOutputTokens: 65000,
+        maxOutputTokens: 24576,
+        thinkingConfig: {
+          thinkingBudget: GEMINI_ANALYZE_THINKING_BUDGET,
+        },
         responseMimeType: "application/json",
         responseSchema: {
           type: SchemaType.ARRAY,
@@ -355,40 +425,66 @@ IMPORTANT: Generate COMPREHENSIVE, DETAILED content - avoid short or brief respo
       ...result,
       date: new Date().toISOString(),
     }));
-  });
+  }, GEMINI_ANALYZE_MAX_RETRIES);
 }
 
 export async function generateLearningPlan(
   result: GradingResult,
   days: number,
   dailyMinutes: number,
+  language = "mr",
 ): Promise<LearningPlan> {
-  const systemInstruction = `Identity: Guruji AI (Creative Education Visionary).
-Goal: Create a HYPER-CREATIVE Learning Improvement Plan (LIP) for ${result.studentName} in Marathi.
+  const languageLabel = language === "en" ? "English" : "Marathi";
+  const languageNote =
+    language === "en"
+      ? "Write the plan in simple English that any parent can understand."
+      : "Write the plan in simple Marathi that any parent can understand.";
 
-STRICT DESIGN RULES:
-1. ANTI-ACADEMIC: Absolutely NO reading textbooks, NO writing in notebooks, NO standard worksheets.
-2. CREATIVITY MANDATE: Design activities that feel like 'Play' or 'Quests'.
-3. HOUSEHOLD PROPS: Use shadows, mirrors, stones, pulses, spoons, or pillows as learning tools.
-4. ROLE-PLAY: Encourage activities like "Be a Scientist", "Explain to a Puppet", or "Build a Model".
-5. TOPIC FOCUS: Target these gaps: ${result.weakAreas.join(", ")}.
-6. TONE: Exciting, fun, and easy for a child to follow.
+  const systemInstruction = `You are an expert primary-school learning designer and student remediation specialist.
 
-Output format (Simple Marathi):
-- title: A fun name for the mission.
-- whatIsNeeded: Simple household items.
-- howToDo: Step-by-step game instructions.
-- guidelines: Tips for the 'Guide' (Parent/Teacher) to keep it joyful.
+Create a parent-friendly home revision plan for ${result.studentName}.
 
-Output ONLY valid JSON.`;
+Rules:
+- Focus strongly on the weak areas.
+- Keep language simple, clear, fun, and practical.
+- Use only household items.
+- Make each day slightly more advanced than the previous day.
+- Prefer real-life practice with counting, grouping, money, time, measuring, reading, writing, and movement when relevant.
+- No punishment language.
+- Build confidence.
+- Output only valid JSON matching the response schema.
 
-  const prompt = `विषय: ${result.subject}. कमकुवत दुवे: ${result.weakAreas.join(", ")}.
-कालावधी: ${days} दिवस, वेळ: ${dailyMinutes} मि.
-कृपया एक रंजक आणि कल्पक कृती-आराखडा तयार करा जो मुलाला अभ्यासासारखा वाटणार नाही.`;
+For each day, make the content feel like a child-friendly mission.
+Each activity should implicitly cover:
+- Day Title
+- Learning Goal
+- Materials Needed
+- Fun Activity
+- Practice Questions
+- Parent Checkpoint
+- Reward / Motivation
+- Difficulty Progression
+
+${languageNote}`;
+
+  const prompt = `Subject: ${result.subject}
+Grade/Class: ${result.className || "Not provided"}
+Board/Curriculum: ${result.schoolName || "Not provided"}
+Total Score: ${result.score}
+Max Score: ${result.totalMarks}
+Weak Areas: ${result.weakAreas.join(", ") || "General revision"}
+Number of Questions: ${result.corrections.length}
+Duration: ${days} days
+Daily Study Time: ${dailyMinutes} minutes
+Language: ${languageLabel}
+
+Create a ${days}-day home learning plan. Keep every day engaging, measurable, and parent-friendly.
+Each day should begin from basics if the score is low, mix revision and challenge if the score is medium, and add enrichment if the score is high.
+Make sure each day's activity title is creative and motivating, and that the practice questions are short and age-appropriate.`;
 
   return callWithRetry(async () => {
     const response = await generateContent({
-      model: "gemini-3-flash-preview",
+      model: DEFAULT_GEMINI_MODEL,
       contents: prompt,
       config: {
         systemInstruction,
@@ -439,7 +535,7 @@ export async function complexEducationalQuery(
 ): Promise<string> {
   return callWithRetry(async () => {
     const response = await generateContent({
-      model: "gemini-3-pro-preview",
+      model: DEFAULT_GEMINI_MODEL,
       contents: query,
       config: {
         systemInstruction:
@@ -457,7 +553,7 @@ export async function searchGroundingQuery(
 ): Promise<{ text: string; sources: any[] }> {
   return callWithRetry(async () => {
     const response = await generateContent({
-      model: "gemini-3-flash-preview",
+      model: DEFAULT_GEMINI_MODEL,
       contents: query,
       config: {
         tools: [{ googleSearch: {} }],
@@ -497,7 +593,103 @@ ${JSON.stringify(result, null, 2)}`;
 
   return callWithRetry(async () => {
     const response = await generateContent({
-      model: "gemini-3-flash-preview",
+      model: DEFAULT_GEMINI_MODEL,
+      contents: prompt,
+      config: {
+        systemInstruction,
+        temperature: 0.2,
+        maxOutputTokens: 32000,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: SchemaType.OBJECT,
+          properties: {
+            studentName: { type: SchemaType.STRING },
+            subject: { type: SchemaType.STRING },
+            score: { type: SchemaType.NUMBER },
+            totalMarks: { type: SchemaType.NUMBER },
+            feedback: { type: SchemaType.STRING },
+            className: { type: SchemaType.STRING },
+            schoolName: { type: SchemaType.STRING },
+            examType: { type: SchemaType.STRING },
+            rollNumber: { type: SchemaType.STRING },
+            date: { type: SchemaType.STRING },
+            corrections: {
+              type: SchemaType.ARRAY,
+              items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  questionNo: { type: SchemaType.STRING },
+                  questionText: { type: SchemaType.STRING },
+                  studentAnswer: { type: SchemaType.STRING },
+                  correctAnswer: { type: SchemaType.STRING },
+                  marksObtained: { type: SchemaType.NUMBER },
+                  maxMarks: { type: SchemaType.NUMBER },
+                  analysis: { type: SchemaType.STRING },
+                },
+                required: [
+                  "questionNo",
+                  "questionText",
+                  "studentAnswer",
+                  "correctAnswer",
+                  "marksObtained",
+                  "maxMarks",
+                  "analysis",
+                ],
+              },
+            },
+            weakAreas: {
+              type: SchemaType.ARRAY,
+              items: { type: SchemaType.STRING },
+            },
+          },
+          required: [
+            "studentName",
+            "subject",
+            "score",
+            "totalMarks",
+            "feedback",
+            "corrections",
+            "weakAreas",
+          ],
+        },
+      },
+    });
+
+    const translated = JSON.parse(cleanJsonText(extractResponseText(response)));
+    return {
+      ...result,
+      ...translated,
+      date: result.date,
+      learningPlan: result.learningPlan,
+    };
+  });
+}
+
+export async function translateGradingResultToMarathi(
+  result: GradingResult,
+): Promise<GradingResult> {
+  const systemInstruction = `You are a professional translator specializing in educational content.
+Your task is to translate a student grading report to Marathi.
+
+RULES:
+1. Translate ALL user-facing English text to clear, natural Marathi.
+2. Keep the student's name as-is (do not transliterate names unless already in Marathi).
+3. Translate subject names naturally into Marathi when needed.
+4. Maintain the same warm, encouraging tone.
+5. Preserve all numbers, scores, marks, and dates exactly as they are.
+6. Translate questionText, studentAnswer, correctAnswer, analysis, feedback, weakAreas, className, schoolName, and examType.
+7. If any text is already in Marathi, keep it as-is.
+8. Return only JSON with the same structure.
+
+OUTPUT: Return the complete translated JSON object with the same structure.`;
+
+  const prompt = `Translate this grading result to Marathi. Return ONLY valid JSON:
+
+${JSON.stringify(result, null, 2)}`;
+
+  return callWithRetry(async () => {
+    const response = await generateContent({
+      model: DEFAULT_GEMINI_MODEL,
       contents: prompt,
       config: {
         systemInstruction,

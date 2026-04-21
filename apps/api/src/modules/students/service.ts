@@ -284,7 +284,7 @@ export async function getStudentProfile(studentId: string): Promise<{
   name: string;
   rollNumber: string;
   className: string;
-  results: GradingResult[];
+  results: Array<GradingResult & { analysisId: string }>;
   learningPlans: LearningPlan[];
 } | null> {
   const student = await prisma.student.findUnique({
@@ -315,7 +315,7 @@ export async function getStudentProfile(studentId: string): Promise<{
 
   if (!student) return null;
 
-  const results: GradingResult[] = [];
+  const results: Array<GradingResult & { analysisId: string }> = [];
   const learningPlans: LearningPlan[] = [];
 
   for (const sheet of student.answerSheets) {
@@ -343,6 +343,7 @@ export async function getStudentProfile(studentId: string): Promise<{
         date: analysis.createdAt.toISOString(),
         weakAreas: weakTopics?.en || weakTopics?.mr || [],
         className: student.class.name,
+        analysisId: analysis.id,
       });
 
       if (analysis.learningImprovementPlan) {
@@ -431,6 +432,7 @@ export async function getAllGradingHistory(): Promise<GradingResult[]> {
       date: analysis.createdAt.toISOString(),
       weakAreas: weakTopics?.en || weakTopics?.mr || [],
       className: student?.class?.name,
+      analysisId: analysis.id,
     };
   });
 }
