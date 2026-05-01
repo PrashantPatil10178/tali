@@ -109,6 +109,7 @@ export const geminiRoutes = new Elysia({ prefix: "/api/gemini" }).post(
             Number(payload.days || 0),
             Number(payload.dailyMinutes || 0),
             typeof payload.language === "string" ? payload.language : undefined,
+            typeof payload.teacherPrompt === "string" ? payload.teacherPrompt : undefined,
           );
           break;
         case "complexEducationalQuery":

@@ -7,10 +7,12 @@ import {
   IconDownload,
   IconFileAnalytics,
   IconLoader2,
+  IconPlayerStop,
   IconRocket,
   IconSparkles,
   IconTargetArrow,
   IconUser,
+  IconVolume2,
 } from "@tabler/icons-react";
 import { GradingResult, LearningPlan } from "@tali/types";
 import {
@@ -36,6 +38,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useLanguage, type Locale } from "@/lib/LanguageContext";
 import { useNotificationStore } from "@/features/notifications/utils/store";
+import { useSarvamTts } from "@/hooks/use-sarvam-tts";
 
 const REPORTS_SESSION_KEY = "tali_reports_session_results";
 const WORKHOME_SESSION_KEY = "tali_workhome_session_payload";
@@ -204,6 +207,7 @@ export default function ReportsViewPage(): React.JSX.Element {
   const addNotification = useNotificationStore(
     (state) => state.addNotification,
   );
+  const { isSpeaking, isLoading: ttsLoading, speak, stop } = useSarvamTts();
 
   const requestedAnalysisId = searchParams.get("analysisId");
   const requestedStudentId = searchParams.get("studentId");
@@ -267,7 +271,8 @@ export default function ReportsViewPage(): React.JSX.Element {
   useEffect(() => {
     setGeneratedPlan(selectedReport?.learningPlan ?? null);
     setPlanError(null);
-  }, [selectedReport]);
+    stop(); // stop TTS when switching reports
+  }, [selectedReport, stop]);
 
   const allReports = useMemo(() => {
     const merged = new Map<string, GradingResult>();
@@ -602,6 +607,30 @@ export default function ReportsViewPage(): React.JSX.Element {
                     ? t("reports.detail.downloading")
                     : `${t("reports.detail.download")} - ${localeLabel}`}
                 </Button>
+                {isSpeaking ? (
+                  <Button variant="outline" onClick={stop}>
+                    <IconPlayerStop className="mr-2 h-4 w-4 text-rose-500" />
+                    Stop
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    disabled={ttsLoading || !selectedReport?.feedback}
+                    onClick={() =>
+                      void speak(
+                        selectedReport?.feedback ?? "",
+                        pdfLocale,
+                      )
+                    }
+                  >
+                    {ttsLoading ? (
+                      <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <IconVolume2 className="mr-2 h-4 w-4" />
+                    )}
+                    {ttsLoading ? "Loading..." : "Listen"}
+                  </Button>
+                )}
               </div>
             </div>
 

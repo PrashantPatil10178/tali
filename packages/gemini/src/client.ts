@@ -71,12 +71,14 @@ export const generateLearningPlan = async (
   days: number,
   dailyMinutes: number,
   language?: string,
+  teacherPrompt?: string,
 ): Promise<LearningPlan> => {
   return callGeminiApi<LearningPlan>("generateLearningPlan", {
     result,
     days,
     dailyMinutes,
     language,
+    teacherPrompt,
   });
 };
 

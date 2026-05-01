@@ -1080,7 +1080,7 @@ export default function ScanViewPage() {
                   {selectedFiles.map((file) => (
                     <Card
                       key={file.id}
-                      className="relative overflow-hidden transition-all hover:border-primary/30 shadow-sm border-border group bg-card"
+                      className="relative overflow-hidden transition-all hover:border-primary/30 shadow-sm border-border group bg-card cursor-pointer"
                     >
                       <div className="flex p-4 gap-4 items-center">
                         <div className="h-16 w-16 shrink-0 rounded-xl overflow-hidden border border-border shadow-sm flex-none bg-muted/30">
@@ -1091,7 +1091,7 @@ export default function ScanViewPage() {
                           ) : (
                             <Image
                               src={file.preview}
-                              alt="preview"
+                              alt={`Answer sheet preview – ${file.file.name}`}
                               width={64}
                               height={64}
                               unoptimized
@@ -1347,7 +1347,8 @@ export default function ScanViewPage() {
               onClick={() => setSinglePdfLanguagePickerOpen(true)}
               disabled={isPdfLoading}
               size="sm"
-              className="font-semibold shadow-sm rounded-full px-4"
+              className="font-semibold shadow-sm rounded-full px-4 min-h-[44px]"
+              aria-label={isPdfLoading ? t("scanner.packingPdf") : t("scanner.exportPdf")}
             >
               {isPdfLoading ? (
                 <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1373,7 +1374,8 @@ export default function ScanViewPage() {
                       }
                       size="sm"
                       onClick={() => setActiveResultIndex(index)}
-                      className={`text-xs font-semibold rounded-full shadow-sm transition-all ${
+                      aria-label={`${t("scanner.selectStudent")}: ${result.studentName || result.subject || `${t("result.student")} ${index + 1}`}`}
+                      className={`text-xs font-semibold rounded-full shadow-sm transition-all min-h-[44px] ${
                         index === activeResultIndex
                           ? "bg-primary text-primary-foreground"
                           : "bg-background hover:bg-muted"
@@ -1411,17 +1413,36 @@ export default function ScanViewPage() {
                         displaySingleResult.subject ||
                         t("result.student")}
                     </h1>
-                    <div className="pdf-meta-muted mt-4 flex flex-wrap gap-4 text-sm font-semibold text-white/80">
+                    <div className="pdf-meta-muted mt-4 flex flex-wrap gap-2.5 text-sm font-semibold text-white/80">
+                      {displaySingleResult.rollNumber && (
+                        <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm border border-white/10 shadow-sm">
+                          <IconUser className="h-3.5 w-3.5 opacity-80" />
+                          {singlePdfT("scanner.meta.rollNumber")}:{" "}
+                          {displaySingleResult.rollNumber}
+                        </span>
+                      )}
                       <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm border border-white/10 shadow-sm">
-                        <IconSchool className="h-4 w-4 opacity-80" />{" "}
-                        {displaySingleResult.className || "-"}
+                        <IconSchool className="h-3.5 w-3.5 opacity-80" />{" "}
+                        {displaySingleResult.className || singlePdfT("scanner.meta.unknown")}
                       </span>
                       <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm border border-white/10 shadow-sm">
-                        <IconFileText className="h-4 w-4 opacity-80" />{" "}
+                        <IconFileText className="h-3.5 w-3.5 opacity-80" />{" "}
                         {displaySingleResult.subject || "-"}
                       </span>
+                      {displaySingleResult.schoolName && (
+                        <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm border border-white/10 shadow-sm">
+                          <IconSchool className="h-3.5 w-3.5 opacity-80" />
+                          {displaySingleResult.schoolName}
+                        </span>
+                      )}
+                      {displaySingleResult.examType && (
+                        <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm border border-white/10 shadow-sm">
+                          <IconFileText className="h-3.5 w-3.5 opacity-80" />
+                          {displaySingleResult.examType}
+                        </span>
+                      )}
                       <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm border border-white/10 shadow-sm">
-                        <IconUser className="h-4 w-4 opacity-80" />{" "}
+                        <IconClock className="h-3.5 w-3.5 opacity-80" />{" "}
                         {displaySingleResult.date || todayLabel}
                       </span>
                     </div>
@@ -1552,9 +1573,19 @@ export default function ScanViewPage() {
                               <div className="w-1.5 h-1.5 rounded-full bg-rose-400/60" />
                               {singlePdfT("scanner.studentAnswer")}
                             </div>
-                            <div className="pdf-answer-student p-3 sm:p-4 rounded-xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 text-rose-950 dark:text-rose-100 font-medium whitespace-pre-wrap shadow-inner leading-relaxed">
-                              {q.studentAnswer || "-"}
-                            </div>
+                            {!q.studentAnswer ||
+                            q.studentAnswer.trim() === "" ||
+                            q.studentAnswer.trim() === "-" ? (
+                              <div className="pdf-answer-student p-3 sm:p-4 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 shadow-inner">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700/40">
+                                  ⚠ {singlePdfT("scanner.notRecognized")}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="pdf-answer-student p-3 sm:p-4 rounded-xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 text-rose-950 dark:text-rose-100 font-medium whitespace-pre-wrap shadow-inner leading-relaxed">
+                                {q.studentAnswer}
+                              </div>
+                            )}
                           </div>
                           <div className="space-y-2">
                             <div className="pdf-meta-muted text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">

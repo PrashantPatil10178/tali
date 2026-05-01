@@ -414,6 +414,9 @@ IMPORTANT: Generate COMPREHENSIVE, DETAILED content - avoid short or brief respo
               "feedback",
               "corrections",
               "weakAreas",
+              "className",
+              "rollNumber",
+              "examType",
             ],
           },
         },
@@ -423,7 +426,7 @@ IMPORTANT: Generate COMPREHENSIVE, DETAILED content - avoid short or brief respo
     const results = JSON.parse(cleanJsonText(extractResponseText(response)));
     return results.map((result: GradingResult) => ({
       ...result,
-      date: new Date().toISOString(),
+      date: result.date || new Date().toISOString(),
     }));
   }, GEMINI_ANALYZE_MAX_RETRIES);
 }
@@ -433,12 +436,17 @@ export async function generateLearningPlan(
   days: number,
   dailyMinutes: number,
   language = "mr",
+  teacherPrompt?: string,
 ): Promise<LearningPlan> {
   const languageLabel = language === "en" ? "English" : "Marathi";
   const languageNote =
     language === "en"
       ? "Write the plan in simple English that any parent can understand."
       : "Write the plan in simple Marathi that any parent can understand.";
+
+  const teacherNote = teacherPrompt?.trim()
+    ? `\n\nTEACHER INSTRUCTIONS (follow these exactly):\n${teacherPrompt.trim()}`
+    : "";
 
   const systemInstruction = `You are an expert primary-school learning designer and student remediation specialist.
 
@@ -465,7 +473,7 @@ Each activity should implicitly cover:
 - Reward / Motivation
 - Difficulty Progression
 
-${languageNote}`;
+${languageNote}${teacherNote}`;
 
   const prompt = `Subject: ${result.subject}
 Grade/Class: ${result.className || "Not provided"}

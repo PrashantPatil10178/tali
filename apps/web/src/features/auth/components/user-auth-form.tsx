@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,8 @@ export default function UserAuthForm({
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard/overview";
 
   async function onSubmit(event: React.SyntheticEvent) {
     event.preventDefault();
@@ -40,7 +42,7 @@ export default function UserAuthForm({
       return;
     }
 
-    router.push("/dashboard");
+    router.push(callbackUrl);
   }
 
   async function onGoogleSignIn() {

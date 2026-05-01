@@ -1,11 +1,13 @@
 import StudentDetailViewPage from "@/features/students/components/student-detail-view-page";
+import { use } from "react";
 
 interface StudentDetailPageProps {
-  readonly params: {
+  readonly params: Promise<{
     readonly studentId: string;
-  };
+  }>;
 }
 
 export default function Page({ params }: StudentDetailPageProps) {
-  return <StudentDetailViewPage studentId={params.studentId} />;
+  const { studentId } = use(params);
+  return <StudentDetailViewPage studentId={studentId} />;
 }

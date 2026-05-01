@@ -215,7 +215,7 @@ async function ensureDefaultSchoolAndClass() {
   return { school, defaultClass };
 }
 
-// Find or create a student by name
+// Find or create a student by name, with class-aware resolution
 async function findOrCreateStudent(
   studentName: string,
   className?: string,
@@ -223,31 +223,87 @@ async function findOrCreateStudent(
 ): Promise<string> {
   const { school, defaultClass } = await ensureDefaultSchoolAndClass();
 
-  // Try to find existing student by name
+  // ── Resolve the correct class (or fall back to "Default") ──
+  let targetClass = defaultClass;
+  if (className && className.trim()) {
+    const normalizedClassName = className.trim();
+    let cls = await prisma.class.findFirst({
+      where: { schoolId: school.id, name: normalizedClassName },
+    });
+
+    if (!cls) {
+      cls = await prisma.class.create({
+        data: {
+          schoolId: school.id,
+          name: normalizedClassName,
+          academicYear: new Date().getFullYear().toString(),
+        },
+      });
+    }
+
+    targetClass = cls;
+  }
+
+  // ── Try to find existing student by name + class (precise match) ──
   let student = await prisma.student.findFirst({
     where: {
       schoolId: school.id,
       name: studentName,
+      classId: targetClass.id,
     },
   });
 
+  // ── Fall back to school-wide name match (cross-class) ──
   if (!student) {
-    // Generate a unique roll number if not provided
-    const existingCount = await prisma.student.count({
-      where: { classId: defaultClass.id },
-    });
-    const newRollNumber = rollNumber || `AUTO-${existingCount + 1}`;
-
-    student = await prisma.student.create({
-      data: {
+    student = await prisma.student.findFirst({
+      where: {
         schoolId: school.id,
-        classId: defaultClass.id,
         name: studentName,
-        rollNumber: newRollNumber,
-        preferredLanguage: "BILINGUAL",
       },
     });
   }
+
+  if (student) {
+    // Backfill roll number if we only had a placeholder and now have a real one
+    const updates: Record<string, unknown> = {};
+
+    if (rollNumber && student.rollNumber.startsWith("AUTO-")) {
+      updates.rollNumber = rollNumber;
+    }
+
+    // Move to the correct class if a more specific one was detected
+    if (
+      student.classId !== targetClass.id &&
+      targetClass.id !== defaultClass.id
+    ) {
+      updates.classId = targetClass.id;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await prisma.student.update({
+        where: { id: student.id },
+        data: updates,
+      });
+    }
+
+    return student.id;
+  }
+
+  // ── Create new student ──
+  const existingCount = await prisma.student.count({
+    where: { classId: targetClass.id },
+  });
+  const newRollNumber = rollNumber || `AUTO-${existingCount + 1}`;
+
+  student = await prisma.student.create({
+    data: {
+      schoolId: school.id,
+      classId: targetClass.id,
+      name: studentName,
+      rollNumber: newRollNumber,
+      preferredLanguage: "BILINGUAL",
+    },
+  });
 
   return student.id;
 }
@@ -257,7 +313,7 @@ export async function saveGradingResult(result: GradingResult): Promise<{
   studentId: string;
   analysisId: string;
 }> {
-  const { school, defaultClass } = await ensureDefaultSchoolAndClass();
+  const { school } = await ensureDefaultSchoolAndClass();
 
   // Find or create student
   const studentId = await findOrCreateStudent(
@@ -265,6 +321,12 @@ export async function saveGradingResult(result: GradingResult): Promise<{
     result.className,
     result.rollNumber,
   );
+
+  // Retrieve the student's resolved class so the exam is linked correctly
+  const studentRecord = await prisma.student.findUnique({
+    where: { id: studentId },
+  });
+  const resolvedClassId = studentRecord!.classId;
 
   // Find or create a default subject
   let subject = await prisma.subject.findFirst({
@@ -306,7 +368,7 @@ export async function saveGradingResult(result: GradingResult): Promise<{
     data: {
       title: `${result.subject} - ${result.examType || "Assessment"}`,
       subjectId: subject.id,
-      classId: defaultClass.id,
+      classId: resolvedClassId,
       teacherId: teacher.id,
       examDate: new Date(result.date),
       totalMarks: result.totalMarks,

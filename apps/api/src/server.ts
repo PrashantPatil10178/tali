@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { geminiRoutes } from "@/modules/gemini/routes";
 import { reportsRoutes } from "@/modules/reports/routes";
 import { studentsRoutes } from "@/modules/students/routes";
+import { ttsRoutes } from "@/modules/tts/routes";
 
 // Read allowed origins from env (comma-separated) with local fallback
 const allowedOrigins = process.env.CORS_ORIGIN
@@ -42,6 +43,7 @@ export const app = new Elysia()
   .use(geminiRoutes)
   .use(reportsRoutes)
   .use(studentsRoutes)
+  .use(ttsRoutes)
   .get(
     "/api/me",
     ({ session, user }) => ({
